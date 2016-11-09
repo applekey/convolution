@@ -1,6 +1,10 @@
 #include "waveletFilter.h"
+#include "helper.h"
 #include <stdio.h>
+#include <vector>
+
 #define SIGNAL_LENGTH 16
+#define COMPRESSION_LEVELS 5
 
 //signal
 double * host_signal_array = 0;
@@ -20,23 +24,8 @@ double * device_high_filter_array = 0;
 
 waveletFilter filter;
 
-__global__ void convolveWavelet(double * filter, int filterLength, 
-                                double * inputSignal, int signalLength,
-                                double * output, int outputOffset) {
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
-    int inputIndex = index * 2 + (filterLength - 1); 
+std::vector<int> coefficientIndicies; 
 
-    double sum = 0.0;
-
-    for(int i = 0; i < filterLength; i++) {
-        sum += filter[i] * inputSignal[inputIndex - (filterLength - 1) + i];
-    }
-
-    output[index + outputOffset] = sum; 
-}
-
-
-/*void init(double * signal, int signalLength, double * filter, int filterLength) {*/
 double * initSignal() {
     int signalLenght = SIGNAL_LENGTH;
     int extendedInputSignalLength = signalLenght + (9 - 1) * 2;
@@ -65,7 +54,7 @@ double * initSignal() {
 double * initOutput() {
     int outputLenght = SIGNAL_LENGTH;
     int num_bytes = outputLenght * sizeof(double);
-
+    int totalLenght = calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, SIGNAL_LENGTH);
     cudaMalloc((void**)&device_output_array, num_bytes);
     return device_output_array;
 }
@@ -136,6 +125,8 @@ void freeMemory() {
     free(host_high_filter_array);
     cudaFree(device_high_filter_array);
 }
+
+
 
 int main(int argc, const char * argv[]) {
     filter.constructFilters();
