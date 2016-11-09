@@ -11,13 +11,13 @@ public:
     }
 
     void getLowPassFilter(double * copyTo) {
-        memcpy(copyTo, lowPassFilter, 9);
+        memcpy(copyTo, lowPassFilter, 9 * sizeof(double));
         //return lowPassFilter;
     }
 
     void getHighPassFilter(double * copyTo) {
         //hard coded to 9
-        memcpy(copyTo, highPassFilter, 9);
+        memcpy(copyTo, highPassFilter, 9 * sizeof(double));
         //return highPassFilter;
     }
 

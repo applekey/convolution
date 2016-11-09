@@ -1,6 +1,6 @@
 #include "waveletFilter.h"
 #include <stdio.h>
-#define SIGNAL_LENGTH 256
+#define SIGNAL_LENGTH 16
 
 //signal
 double * host_signal_array = 0;
@@ -29,7 +29,7 @@ __global__ void convolveWavelet(double * filter, int filterLength,
     double sum = 0.0;
 
     for(int i = 0; i < filterLength; i++) {
-        sum += filter[i] * inputSignal[inputIndex];
+        sum += filter[i] * inputSignal[inputIndex - (filterLength - 1) + i];
     }
 
     output[index + outputOffset] = sum; 
@@ -78,6 +78,9 @@ double * initLowFilter() {
 
     filter.getLowPassFilter(host_low_filter_array);
 
+    for(int i =0; i < 9; i++) {
+        printf("%f, ",host_low_filter_array[i]); 
+    }
     cudaMalloc((void**)&device_low_filter_array, num_bytes);
 
     cudaMemcpy(device_low_filter_array, host_low_filter_array, num_bytes, cudaMemcpyHostToDevice);
@@ -90,7 +93,10 @@ double * initHighFilter() {
 
     host_high_filter_array = (double*)malloc(num_bytes);
 
-    filter.getLowPassFilter(host_high_filter_array);
+    filter.getHighPassFilter(host_high_filter_array);
+    for(int i =0; i < 9; i++) {
+        printf("%f, ",host_low_filter_array[i]); 
+    }
     cudaMalloc((void**)&device_high_filter_array, num_bytes);
 
     cudaMemcpy(device_high_filter_array, host_high_filter_array, num_bytes, cudaMemcpyHostToDevice);
@@ -109,8 +115,10 @@ void transferMemoryBack() {
 
     host_output_array = (double*)malloc(num_bytes);
     cudaMemcpy(host_output_array, device_output_array, num_bytes, cudaMemcpyDeviceToHost);  
+
     //print output
-    for(int i = 0; i < SIGNAL_LENGTH ;i ++) {
+    printf("\n printing output \n");
+    for(int i = 0; i < SIGNAL_LENGTH; i ++) {
         printf("%f \n", host_output_array[i]);
     }
 }
@@ -133,8 +141,8 @@ int main(int argc, const char * argv[]) {
     filter.constructFilters();
     init();
 
-    int block_size = 128;
-    int gridSize = SIGNAL_LENGTH / block_size;
+    int block_size = SIGNAL_LENGTH / 2;
+    int gridSize = 1;
     //convolve high filters
     int outputOffset = 0;
     int inputSignalExtendedLength = SIGNAL_LENGTH + (9 - 1) * 2;
