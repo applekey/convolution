@@ -1,3 +1,4 @@
+#include "waveletFilter.h"
 #include <stdio.h>
 #define SIGNAL_LENGTH 256
 
@@ -16,8 +17,9 @@ double * device_low_filter_array = 0;
 double * host_high_filter_array = 0;
 double * device_high_filter_array = 0;
 
+waveletFilter filter;
 
-__device__ void convolveWavelet(double * filter, int filterLength, 
+__global__ void convolveWavelet(double * filter, int filterLength, 
                                 double * inputSignal, int signalLength,
                                 double * output, int outputOffset) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -28,6 +30,7 @@ __device__ void convolveWavelet(double * filter, int filterLength,
     for(int i = 0; i < filterLength; i++) {
         sum += filter[i] * inputSignal[inputIndex];
     }
+
     output[index + outputOffset] = sum; 
 }
 
@@ -57,6 +60,9 @@ double * initLowFilter() {
     int num_bytes = lowFilterLenght * sizeof(double);
 
     host_low_filter_array = (double*)malloc(num_bytes);
+
+    filter.getLowPassFilter(host_low_filter_array);
+
     cudaMalloc((void**)&device_low_filter_array, num_bytes);
 
     cudaMemcpy(device_low_filter_array, host_low_filter_array, num_bytes, cudaMemcpyHostToDevice);
@@ -68,6 +74,8 @@ double * initHighFilter() {
     int num_bytes = highFilterLenght * sizeof(double);
 
     host_high_filter_array = (double*)malloc(num_bytes);
+
+    filter.getLowPassFilter(host_high_filter_array);
     cudaMalloc((void**)&device_high_filter_array, num_bytes);
 
     cudaMemcpy(device_high_filter_array, host_high_filter_array, num_bytes, cudaMemcpyHostToDevice);
@@ -81,6 +89,19 @@ void init() {
     initOutput();
 }
 
+void freeMemory() {
+    free(host_signal_array);
+
+    cudaFree(device_signal_array);
+    cudaFree(device_output_array);
+
+    free(host_low_filter_array);
+    cudaFree(device_low_filter_array);
+
+    free(host_high_filter_array);
+    cudaFree(device_high_filter_array);
+}
+
 int main(int argc, const char * argv[]) {
     //generate constant signal that is power of 2, 64
     int signalLength = 64;
@@ -90,8 +111,25 @@ int main(int argc, const char * argv[]) {
         inputSignal[0] = 1.0;
     }
 
+    filter.constructFilters();
     init();
-    /*init(inputSignal, inputSignal, );*/
+
+    int block_size = 128;
+    int gridSize = SIGNAL_LENGTH / block_size;
+    //convolve high filters
+    int outputOffset = 0;
+    convolveWavelet<<<gridSize, block_size>>>(device_high_filter_array, 9, 
+                    device_signal_array,SIGNAL_LENGTH,
+                    device_output_array, 0);
+
+    outputOffset = SIGNAL_LENGTH / 2;
+    //convolve low filters
+    convolveWavelet<<<gridSize, block_size>>>(device_low_filter_array, 9, 
+                    device_signal_array,SIGNAL_LENGTH,
+                    device_output_array, outputOffset);
+    //transfer output back
+    //done free memory 
+    freeMemory();
 
     return 0;
 }
