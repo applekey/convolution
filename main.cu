@@ -160,6 +160,7 @@ int main(int argc, const char * argv[]) {
 
     //transfer output back
     transferMemoryBack(outputLength);
+    printOutputCoefficients(host_output_array, coefficientIndicies);
     //done free memory 
     freeMemory();
 

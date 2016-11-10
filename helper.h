@@ -110,4 +110,6 @@ void dwt(std::vector<int> & L, int levelsToCompress,
         currentHighCoefficientOffset = L[level + 1] + signalLength / 2;
         currentDeviceSignal = deviceOutputCoefficients;
     }
+    //free tmp memory
+    cudaFree(deviceLowCoefficientMemory);
 }
