@@ -29,6 +29,11 @@ std::vector<int> coefficientIndicies;
 double * initSignal() {
     int signalLenght = SIGNAL_LENGTH;
     int extendedInputSignalLength = signalLenght + (9 - 1) * 2;
+
+    double totalCoefficientLenght = 
+        calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, 
+                               SIGNAL_LENGTH);
+
     int num_bytes = extendedInputSignalLength * sizeof(double);
 
     host_signal_array = (double*)malloc(num_bytes);
@@ -127,25 +132,12 @@ void freeMemory() {
 }
 
 
-
 int main(int argc, const char * argv[]) {
     filter.constructFilters();
+
     init();
 
-    int block_size = SIGNAL_LENGTH / 2;
-    int gridSize = 1;
-    //convolve high filters
-    int outputOffset = 0;
-    int inputSignalExtendedLength = SIGNAL_LENGTH + (9 - 1) * 2;
-    convolveWavelet<<<gridSize, block_size>>>(device_high_filter_array, 9, 
-                    device_signal_array, inputSignalExtendedLength,
-                    device_output_array, 0);
 
-    outputOffset = SIGNAL_LENGTH / 2;
-    //convolve low filters
-    convolveWavelet<<<gridSize, block_size>>>(device_low_filter_array, 9, 
-                    device_signal_array, inputSignalExtendedLength,
-                    device_output_array, outputOffset);
     //transfer output back
     transferMemoryBack();
     //done free memory 

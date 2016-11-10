@@ -1,3 +1,4 @@
+#define SIGNAL_PAD_VALUE 0.0
 #include <vector>
 int calculateCoefficientLength(std::vector<int> &L, int levels,
                                 int inputSignalLength) {
@@ -34,6 +35,53 @@ __global__ void convolveWavelet(double * filter, int filterLength,
     output[index + outputOffset] = sum; 
 }
 
-void dwt() {
+__global__ void extend(double * inputSignal, int signalLength, int filterLength,
+                       double * extendedSignal) {
+
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    int sideWidth = filterLength / 2;
+
+    if(index <= sideWidth) {
+
+        extendedSignal[index] = SIGNAL_PAD_VALUE;
+
+    } else if(index < sideWidth + signalLength) {
+
+        extendedSignal[index] = inputSignal[index - sideWidth];
+
+    } else if(index > (sideWidth + signalLength) && (index <= signalLength + sideWidth * 2)) {
+
+        extendedSignal[index] = SIGNAL_PAD_VALUE;
+
+    } else {
+
+        return;
+    } 
+}
+
+void dwt(std::vector<int> & L, int levelsToCompress,
+         double * deviceInputSignal, int signalLength,
+         double * deviceLowFilter, 
+         double * deviceHighFilter,
+         int filterLength) {
+
+    int block_size = signalLength / 2;
+    int gridSize = 1;
     
+    for(int level = 0; level < levelsToCompress; level++) {
+        //convolve high filters
+        int outputOffset = 0;
+        int inputSignalExtendedLength = signalLength + (9 - 1) * 2;
+
+        //convolveWavelet<<<gridSize, block_size>>>(deviceHighFilter, 9, 
+                        //device_signal_array, inputSignalExtendedLength,
+                        //device_output_array, 0);
+
+        //outputOffset = SIGNAL_LENGTH / 2;
+
+        ////convolve low filters
+        //convolveWavelet<<<gridSize, block_size>>>(deviceLowFilter_array, 9, 
+                        //device_signal_array, inputSignalExtendedLength,
+                        //device_output_array, outputOffset);
+    }
 }
