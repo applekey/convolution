@@ -59,29 +59,54 @@ __global__ void extend(double * inputSignal, int signalLength, int filterLength,
     } 
 }
 
+double * initLowCoefficientMemory(int signalLength) {
+    double * lowCoefficientMemory = 0; 
+    int num_bytes = signalLength * sizeof(double);
+    cudaMalloc((void**)&lowCoefficientMemory, num_bytes);
+    return lowCoefficientMemory;
+}
+
 void dwt(std::vector<int> & L, int levelsToCompress,
          double * deviceInputSignal, int signalLength,
          double * deviceLowFilter, 
          double * deviceHighFilter,
+         double * deviceOutputCoefficients,
+         int outputLength,
          int filterLength) {
 
-    int block_size = signalLength / 2;
     int gridSize = 1;
-    
+    int currentSignalLength = signalLength;
+    int currentHighCoefficientOffset = 0; 
+    //create a tempory low coefficient / signal extend array
+     
+    int inputSignalExtendedLength = currentSignalLength + (9 - 1) * 2;
+    double * deviceLowCoefficientMemory = initLowCoefficientMemory(inputSignalExtendedLength);
+
     for(int level = 0; level < levelsToCompress; level++) {
+
         //convolve high filters
         int outputOffset = 0;
-        int inputSignalExtendedLength = signalLength + (9 - 1) * 2;
 
-        //convolveWavelet<<<gridSize, block_size>>>(deviceHighFilter, 9, 
-                        //device_signal_array, inputSignalExtendedLength,
-                        //device_output_array, 0);
+        //extend the signal
+        int inputSignalExtendedLength = currentSignalLength + (9 - 1) * 2;
 
-        //outputOffset = SIGNAL_LENGTH / 2;
+        //extend<<<gridSize, block_size>>>(deviceHighFilter, 9, 
+                        //deviceInputSignal, inputSignalExtendedLength,
+                        //deviceOutputCoefficients, 0);
 
+        //extend the signalLength
+        int block_size = signalLength / 2;
+
+        convolveWavelet<<<gridSize, block_size>>>(deviceHighFilter, 9, 
+                        deviceInputSignal, inputSignalExtendedLength,
+                        deviceOutputCoefficients, 0);
+        
         ////convolve low filters
-        //convolveWavelet<<<gridSize, block_size>>>(deviceLowFilter_array, 9, 
-                        //device_signal_array, inputSignalExtendedLength,
-                        //device_output_array, outputOffset);
+        convolveWavelet<<<gridSize, block_size>>>(deviceLowFilter, 9, 
+                        device_signal_array, inputSignalExtendedLength,
+                        device_output_array, currentHighCoefficientOffset);
+
+        currentSignalLength /= 2;
+        currentHighCoefficientOffset = L[level + 1] - L[level];
     }
 }
