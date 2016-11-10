@@ -1,6 +1,7 @@
 #include "waveletFilter.h"
 #include "helper.h"
 #include <stdio.h>
+#include <iostream>
 #include <vector>
 
 #define SIGNAL_LENGTH 16
@@ -56,10 +57,8 @@ double * initSignal() {
     return device_signal_array;
 }
 
-double * initOutput() {
-    int outputLenght = SIGNAL_LENGTH;
-    int num_bytes = outputLenght * sizeof(double);
-    int totalLenght = calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, SIGNAL_LENGTH);
+double * initOutput(int outputLength) {
+    int num_bytes = outputLength * sizeof(double);
     cudaMalloc((void**)&device_output_array, num_bytes);
     return device_output_array;
 }
@@ -97,23 +96,33 @@ double * initHighFilter() {
     return device_high_filter_array;
 }
 
-void init() {
-    initLowFilter();
-    initHighFilter();
-    initSignal();
-    initOutput();
-}
-
-void transferMemoryBack() {
-    int num_bytes = SIGNAL_LENGTH * sizeof(double);
+void transferMemoryBack(int outputLength) {
+    int num_bytes = outputLength * sizeof(double);
 
     host_output_array = (double*)malloc(num_bytes);
     cudaMemcpy(host_output_array, device_output_array, num_bytes, cudaMemcpyDeviceToHost);  
 
     //print output
     printf("\n printing output \n");
-    for(int i = 0; i < SIGNAL_LENGTH; i ++) {
+    for(int i = 0; i < outputLength; i ++) {
         printf("%f \n", host_output_array[i]);
+    }
+}
+
+void printOutputCoefficients(double * hostOutput, std::vector<int> coefficientIndicies) {
+    int offset = SIGNAL_LENGTH / 2;
+    int coefficientLevels = coefficientIndicies.size();
+    
+    for(int i = 0; i < coefficientLevels - 1;i++) {
+        std::cerr<<"Level: "<<i<<std::endl;
+        int levelCoefficientIndex = coefficientIndicies[i];
+        int numberOfCoefficents = coefficientIndicies[i +1] - coefficientIndicies[i];
+
+        for(int j = 0; j<numberOfCoefficents;j++) {
+            double coeffVal = hostOutput[levelCoefficientIndex + j + offset];
+            std::cerr<<coeffVal<<" ";
+        }
+        std::cerr<<std::endl;
     }
 }
 
@@ -133,13 +142,24 @@ void freeMemory() {
 
 
 int main(int argc, const char * argv[]) {
+    int outputLength = calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, SIGNAL_LENGTH);
+    outputLength += SIGNAL_LENGTH / 2; //add extra for buffer for first low coefficient
+
     filter.constructFilters();
+    initLowFilter();
+    initHighFilter();
+    initSignal();
+    initOutput(outputLength);
 
-    init();
-
+    //run filter   
+    int levelsToCompress = 4;
+    dwt(coefficientIndicies, levelsToCompress, 
+        device_signal_array, SIGNAL_LENGTH,
+        device_low_filter_array, device_high_filter_array,
+        device_output_array, 9);
 
     //transfer output back
-    transferMemoryBack();
+    transferMemoryBack(outputLength);
     //done free memory 
     freeMemory();
 
