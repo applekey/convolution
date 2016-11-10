@@ -80,7 +80,9 @@ void dwt(std::vector<int> & L, int levelsToCompress,
     //create a tempory low coefficient / signal extend array
      
     int inputSignalExtendedLength = currentSignalLength + (9 - 1) * 2;
+
     double * deviceLowCoefficientMemory = initLowCoefficientMemory(inputSignalExtendedLength);
+    double * currentDeviceSignal = deviceInputSignal;
 
     for(int level = 0; level < levelsToCompress; level++) {
 
@@ -90,21 +92,20 @@ void dwt(std::vector<int> & L, int levelsToCompress,
         //extend the signal
         int inputSignalExtendedLength = currentSignalLength + (9 - 1) * 2;
 
-        //extend<<<gridSize, block_size>>>(deviceHighFilter, 9, 
-                        //deviceInputSignal, inputSignalExtendedLength,
-                        //deviceOutputCoefficients, 0);
+        extend<<<1, inputSignalExtendedLength>>>(currentDeviceSignal, inputSignalExtendedLength, 
+                            filterLength, deviceLowCoefficientMemory);
 
         //extend the signalLength
         int block_size = signalLength / 2;
 
         convolveWavelet<<<gridSize, block_size>>>(deviceHighFilter, 9, 
-                        deviceInputSignal, inputSignalExtendedLength,
+                        deviceLowCoefficientMemory, inputSignalExtendedLength,
                         deviceOutputCoefficients, 0);
         
         ////convolve low filters
         convolveWavelet<<<gridSize, block_size>>>(deviceLowFilter, 9, 
-                        device_signal_array, inputSignalExtendedLength,
-                        device_output_array, currentHighCoefficientOffset);
+                        deviceLowCoefficientMemory, inputSignalExtendedLength,
+                        deviceOutputCoefficients, currentHighCoefficientOffset);
 
         currentSignalLength /= 2;
         currentHighCoefficientOffset = L[level + 1] - L[level];
