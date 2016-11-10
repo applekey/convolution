@@ -94,14 +94,20 @@ void dwt(std::vector<int> & L, int levelsToCompress,
         extend<<<1, inputSignalExtendedLength>>>(currentDeviceSignal, inputSignalExtendedLength, 
                             filterLength, deviceLowCoefficientMemory);
 
-        //extend the signalLength
+        ////convolve low filters
         int block_size = signalLength / 2;
 
+        int lowCoeffOffset = 0;
+
+        if(level == levelsToCompress - 1) {
+            lowCoeffOffset = L[level + 1] + signalLength / 2;
+        }
+    
         convolveWavelet<<<1, block_size>>>(deviceHighFilter, 9, 
                         deviceLowCoefficientMemory, inputSignalExtendedLength,
-                        deviceOutputCoefficients, 0);
+                        deviceOutputCoefficients, lowCoeffOffset);
         
-        ////convolve low filters
+        ////convolve high filters
         convolveWavelet<<<1, block_size>>>(deviceLowFilter, 9, 
                         deviceLowCoefficientMemory, inputSignalExtendedLength,
                         deviceOutputCoefficients, currentHighCoefficientOffset);
@@ -110,6 +116,8 @@ void dwt(std::vector<int> & L, int levelsToCompress,
         currentHighCoefficientOffset = L[level + 1] + signalLength / 2;
         currentDeviceSignal = deviceOutputCoefficients;
     }
+    //finally copy the low coefficients to the end 
+    
     //free tmp memory
     cudaFree(deviceLowCoefficientMemory);
 }

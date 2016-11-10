@@ -5,7 +5,7 @@
 #include <vector>
 
 #define SIGNAL_LENGTH 16
-#define COMPRESSION_LEVELS 5
+#define COMPRESSION_LEVELS 2
 
 //signal
 double * host_signal_array = 0;
@@ -71,9 +71,6 @@ double * initLowFilter() {
 
     filter.getLowPassFilter(host_low_filter_array);
 
-    for(int i =0; i < 9; i++) {
-        printf("%f, ",host_low_filter_array[i]); 
-    }
     cudaMalloc((void**)&device_low_filter_array, num_bytes);
 
     cudaMemcpy(device_low_filter_array, host_low_filter_array, num_bytes, cudaMemcpyHostToDevice);
@@ -87,9 +84,6 @@ double * initHighFilter() {
     host_high_filter_array = (double*)malloc(num_bytes);
 
     filter.getHighPassFilter(host_high_filter_array);
-    for(int i =0; i < 9; i++) {
-        printf("%f, ",host_low_filter_array[i]); 
-    }
     cudaMalloc((void**)&device_high_filter_array, num_bytes);
 
     cudaMemcpy(device_high_filter_array, host_high_filter_array, num_bytes, cudaMemcpyHostToDevice);
@@ -101,12 +95,6 @@ void transferMemoryBack(int outputLength) {
 
     host_output_array = (double*)malloc(num_bytes);
     cudaMemcpy(host_output_array, device_output_array, num_bytes, cudaMemcpyDeviceToHost);  
-
-    //print output
-    printf("\n printing output \n");
-    for(int i = 0; i < outputLength; i ++) {
-        printf("%f \n", host_output_array[i]);
-    }
 }
 
 void printOutputCoefficients(double * hostOutput, std::vector<int> coefficientIndicies) {
@@ -152,8 +140,7 @@ int main(int argc, const char * argv[]) {
     initOutput(outputLength);
 
     //run filter   
-    int levelsToCompress = 4;
-    dwt(coefficientIndicies, levelsToCompress, 
+    dwt(coefficientIndicies, COMPRESSION_LEVELS, 
         device_signal_array, SIGNAL_LENGTH,
         device_low_filter_array, device_high_filter_array,
         device_output_array, 9);
