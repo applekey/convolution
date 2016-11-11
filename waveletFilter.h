@@ -1,4 +1,3 @@
-
 #include <iostream>
 class waveletFilter {
 private:

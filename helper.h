@@ -1,11 +1,15 @@
 #define SIGNAL_PAD_VALUE 1.0
 #include <iostream>
 #include <vector>
+
+#define MAX_X 1024
+#define MAX_Y 1024
+
 int calculateCoefficientLength(std::vector<int> &L, int levels,
                                 int inputSignalLength) {
 
     int totalLength = 0;
-    int currentCoefficientLength = inputSignalLength/2; //assume that all signals are powers of 2
+    int currentCoefficientLength = inputSignalLength / 2; //assume that all signals are powers of 2
     L.resize(levels + 2); //+ 2 levels, 1 is the final low coefficients and the last as an end bookeeping
     L[0] = 0;
 
@@ -64,6 +68,19 @@ double * initLowCoefficientMemory(int signalLength) {
     return lowCoefficientMemory;
 }
 
+void calculateBlockSize(int totalLength, 
+                        int & x, int & y) {
+    
+    if(totalLength > MAX_X) {
+        x = MAX_X;
+        y = totalLength /  MAX_X;
+    } else {
+        x = totalLength;
+        y = 1;
+    }
+    std::cerr<<"dims are:"<<x<<":"<<y<<std::endl;
+}
+
 void dwt(std::vector<int> & L, int levelsToCompress,
          double * deviceInputSignal, int signalLength,
          double * deviceLowFilter, 
@@ -89,7 +106,11 @@ void dwt(std::vector<int> & L, int levelsToCompress,
         //extend the signal
         int inputSignalExtendedLength = currentSignalLength + (filterLength / 2 ) * 2;
 
-        extend<<<1, inputSignalExtendedLength>>>(currentDeviceSignal, currentSignalLength, 
+        int xThread = -1;
+        int yThread = -1;
+        calculateBlockSize(inputSignalExtendedLength, xThread, yThread);
+
+        extend<<<xThread, yThread>>>(currentDeviceSignal, currentSignalLength, 
                             filterLength, deviceLowCoefficientMemory);
 
         ////convolve low filters
@@ -101,12 +122,13 @@ void dwt(std::vector<int> & L, int levelsToCompress,
             lowCoeffOffset = L[level + 1] + signalLength / 2;
         }
 
-        convolveWavelet<<<1, block_size>>>(deviceLowFilter, filterLength, 
+        calculateBlockSize(block_size, xThread, yThread);
+        convolveWavelet<<<xThread, yThread>>>(deviceLowFilter, filterLength, 
                         deviceLowCoefficientMemory, inputSignalExtendedLength,
                         deviceOutputCoefficients, lowCoeffOffset);
         
         ////convolve high filters
-        convolveWavelet<<<1, block_size>>>(deviceHighFilter, filterLength, 
+        convolveWavelet<<<xThread, yThread>>>(deviceHighFilter, filterLength, 
                         deviceLowCoefficientMemory, inputSignalExtendedLength,
                         deviceOutputCoefficients, currentHighCoefficientOffset);
 

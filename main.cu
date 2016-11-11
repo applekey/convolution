@@ -1,11 +1,14 @@
 #include "waveletFilter.h"
 #include "helper.h"
 #include <stdio.h>
-#include <iostream>
 #include <vector>
+#include <fstream>
+#include <iostream>
 
-#define SIGNAL_LENGTH 64
-#define COMPRESSION_LEVELS 3
+#define SIGNAL_LENGTH 1048576 
+#define COMPRESSION_LEVELS 1
+
+using namespace std;
 
 //signal
 double * host_signal_array = 0;
@@ -37,15 +40,21 @@ double * initSignal() {
         host_signal_array[i] = 1.0;
     }
 
-    cudaMalloc((void**)&device_signal_array, num_bytes);
+    cudaError_t err = cudaMalloc((void**)&device_signal_array, num_bytes);
 
+    if(err != cudaSuccess){
+         printf("The error is %s", cudaGetErrorString(err));
+    }
     cudaMemcpy(device_signal_array, host_signal_array, num_bytes, cudaMemcpyHostToDevice);
     return device_signal_array;
 }
 
 double * initOutput(int outputLength) {
     int num_bytes = outputLength * sizeof(double);
-    cudaMalloc((void**)&device_output_array, num_bytes);
+    cudaError_t err = cudaMalloc((void**)&device_output_array, num_bytes);
+    if(err != cudaSuccess){
+         printf("The error is %s", cudaGetErrorString(err));
+    }
     return device_output_array;
 }
 
@@ -120,6 +129,17 @@ void freeMemory() {
     cudaFree(device_high_filter_array);
 }
 
+void writeResultsToMemory(double * output, int length) {
+    int offset = SIGNAL_LENGTH / 2;
+    ofstream myfile;
+    myfile.open("output.txt");
+    
+    for(int i = 0; i < length; i++) {
+        myfile << output[i + offset]<<"\n";
+    }
+    myfile.close();
+}
+
 
 int main(int argc, const char * argv[]) {
     int outputLength = calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, SIGNAL_LENGTH);
@@ -139,7 +159,11 @@ int main(int argc, const char * argv[]) {
 
     //transfer output back
     transferMemoryBack(outputLength);
-    printOutputCoefficients(host_output_array, coefficientIndicies);
+    //printOutputCoefficients(host_output_array, coefficientIndicies);
+
+    int ab = calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, SIGNAL_LENGTH);
+    /*writeResultsToMemory(host_output_array, ab);*/
+
     //done free memory 
     freeMemory();
 
