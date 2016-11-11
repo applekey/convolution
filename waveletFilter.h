@@ -1,3 +1,5 @@
+
+#include <iostream>
 class waveletFilter {
 private:
     int filterLength = 9;
@@ -5,20 +7,12 @@ private:
     double * highPassFilter;
 
 public:
-    bool isSymmetric() {
-        //TODO: this has not being verified
-        return true;
-    }
-
     void getLowPassFilter(double * copyTo) {
-        memcpy(copyTo, lowPassFilter, 9 * sizeof(double));
-        //return lowPassFilter;
+        memcpy(copyTo, lowPassFilter, filterLength * sizeof(double));
     }
 
     void getHighPassFilter(double * copyTo) {
-        //hard coded to 9
-        memcpy(copyTo, highPassFilter, 9 * sizeof(double));
-        //return highPassFilter;
+        memcpy(copyTo, highPassFilter, filterLength * sizeof(double));
     }
 
     int getFilterLength() {
@@ -54,7 +48,7 @@ public:
     }
 
     void qmfFilter(double * input, double * output) {
-        double modifier = (filterLength % 2 == 0) ? -1 : 1;
+        double modifier = (filterLength % 2 == 0) ? 1 : -1;
 
         for (int index = 0; index < filterLength; index++) {
             output[index] = modifier * input[filterLength - index - 1];
@@ -72,6 +66,9 @@ public:
             output[i] = back;
             output[filterLength - 1 - i] = front;
         }
+        int midIndex =  filterLength/2;
+        output[midIndex] = tmpOutput[midIndex];
+        delete [] tmpOutput;
     }
 
 

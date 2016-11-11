@@ -5,7 +5,7 @@
 #include <vector>
 
 #define SIGNAL_LENGTH 32
-#define COMPRESSION_LEVELS 1
+#define COMPRESSION_LEVELS 2
 
 //signal
 double * host_signal_array = 0;
@@ -86,6 +86,12 @@ void transferMemoryBack(int outputLength) {
 void printOutputCoefficients(double * hostOutput, std::vector<int> coefficientIndicies) {
     int offset = SIGNAL_LENGTH / 2;
     int coefficientLevels = coefficientIndicies.size();
+
+    /*int total = coefficientIndicies[3];*/
+    /*std::cerr<<coefficientLevels<<" "<<total<<std::endl;*/
+    /*for(int i =0; i< total; i++) {*/
+        /*std::cerr<<hostOutput[offset + i]<<std::endl;*/
+    /*}*/
     
     for(int i = 0; i < coefficientLevels - 1;i++) {
         std::cerr<<"Level: "<<i<<std::endl;

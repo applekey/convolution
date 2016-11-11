@@ -44,7 +44,7 @@ __global__ void extend(double * inputSignal, int signalLength, int filterLength,
 
     if(index <= sideWidth) {
 
-        extendedSignal[index] = SIGNAL_PAD_VALUE;
+        extendedSignal[index] = inputSignal[sideWidth];
 
     } else if(index < sideWidth + signalLength) {
 
@@ -52,7 +52,8 @@ __global__ void extend(double * inputSignal, int signalLength, int filterLength,
 
     }  else {
 
-        extendedSignal[index] = SIGNAL_PAD_VALUE;
+        //extendedSignal[index] = SIGNAL_PAD_VALUE;
+        extendedSignal[index] = inputSignal[sideWidth];
     } 
 }
 
@@ -87,24 +88,25 @@ void dwt(std::vector<int> & L, int levelsToCompress,
 
         //extend the signal
         int inputSignalExtendedLength = currentSignalLength + (filterLength / 2 ) * 2;
-        std::cerr<<inputSignalExtendedLength<<std::endl;
 
-        extend<<<1, inputSignalExtendedLength>>>(currentDeviceSignal, signalLength, 
+        extend<<<1, inputSignalExtendedLength>>>(currentDeviceSignal, currentSignalLength, 
                             filterLength, deviceLowCoefficientMemory);
 
         ////convolve low filters
-        int block_size = signalLength / 2;
+        int block_size = currentSignalLength / 2;
+        std::cerr<<block_size<<std::endl;
 
         int lowCoeffOffset = 0;
         if(level == levelsToCompress - 1) {
             lowCoeffOffset = L[level + 1] + signalLength / 2;
         }
-        convolveWavelet<<<1, block_size>>>(deviceLowFilter, 9, 
+
+        convolveWavelet<<<1, block_size>>>(deviceLowFilter, filterLength, 
                         deviceLowCoefficientMemory, inputSignalExtendedLength,
                         deviceOutputCoefficients, lowCoeffOffset);
         
         ////convolve high filters
-        convolveWavelet<<<1, block_size>>>(deviceHighFilter, 9, 
+        convolveWavelet<<<1, block_size>>>(deviceHighFilter, filterLength, 
                         deviceLowCoefficientMemory, inputSignalExtendedLength,
                         deviceOutputCoefficients, currentHighCoefficientOffset);
 
