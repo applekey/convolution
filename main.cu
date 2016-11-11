@@ -153,7 +153,7 @@ int main(int argc, const char * argv[]) {
     initSignal();
     initOutput(outputLength);
 
-auto start = std::chrono::high_resolution_clock::now();
+auto start = std::chrono::system_clock::now();
     //run filter   
     dwt(coefficientIndicies, COMPRESSION_LEVELS, 
         device_signal_array, SIGNAL_LENGTH,
@@ -163,7 +163,7 @@ auto start = std::chrono::high_resolution_clock::now();
     //transfer output back
     transferMemoryBack(outputLength);
 
-auto end = std::chrono::high_resolution_clock::now();
+auto end = std::chrono::system_clock::now();
 std::chrono::duration<double> diff = end-start;
 std::cout<< diff.count() << " s\n";
     //printOutputCoefficients(host_output_array, coefficientIndicies);
