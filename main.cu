@@ -4,6 +4,7 @@
 #include <vector>
 #include <fstream>
 #include <iostream>
+#include <chrono>
 
 #define SIGNAL_LENGTH 1048576 
 #define COMPRESSION_LEVELS 1
@@ -151,6 +152,7 @@ int main(int argc, const char * argv[]) {
     initSignal();
     initOutput(outputLength);
 
+auto start = std::chrono::high_resolution_clock::now();
     //run filter   
     dwt(coefficientIndicies, COMPRESSION_LEVELS, 
         device_signal_array, SIGNAL_LENGTH,
@@ -159,10 +161,14 @@ int main(int argc, const char * argv[]) {
 
     //transfer output back
     transferMemoryBack(outputLength);
+
+auto end = std::chrono::high_resolution_clock::now();
+std::chrono::duration<double> diff = end-start;
+std::cout<< diff.count() << " s\n";
     //printOutputCoefficients(host_output_array, coefficientIndicies);
 
     int ab = calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, SIGNAL_LENGTH);
-    /*writeResultsToMemory(host_output_array, ab);*/
+    writeResultsToMemory(host_output_array, ab);
 
     //done free memory 
     freeMemory();
