@@ -6,7 +6,8 @@
 #include <iostream>
 #include <chrono>
 
-#define SIGNAL_LENGTH 524288 
+/*#define SIGNAL_LENGTH 536870912 */
+#define SIGNAL_LENGTH 3145728 
 #define COMPRESSION_LEVELS 1
 
 using namespace std;
@@ -33,7 +34,7 @@ std::vector<int> coefficientIndicies;
 
 double * initSignal() {
 
-    int num_bytes = SIGNAL_LENGTH * sizeof(double);
+    long num_bytes = SIGNAL_LENGTH * sizeof(double);
 
     host_signal_array = (double*)malloc(num_bytes);
 
@@ -52,7 +53,7 @@ double * initSignal() {
 }
 
 double * initOutput(int outputLength) {
-    int num_bytes = outputLength * sizeof(double);
+    long num_bytes = outputLength * sizeof(double);
     cudaError_t err = cudaMalloc((void**)&device_output_array, num_bytes);
     if(err != cudaSuccess){
          printf("The error is %s", cudaGetErrorString(err));
@@ -62,7 +63,7 @@ double * initOutput(int outputLength) {
 
 double * initLowFilter() {
     int lowFilterLenght = 9;
-    int num_bytes = lowFilterLenght * sizeof(double);
+    long num_bytes = lowFilterLenght * sizeof(double);
 
     host_low_filter_array = (double*)malloc(num_bytes);
 
@@ -76,7 +77,7 @@ double * initLowFilter() {
 
 double * initHighFilter() {
     int highFilterLenght = 9;
-    int num_bytes = highFilterLenght * sizeof(double);
+    long num_bytes = highFilterLenght * sizeof(double);
 
     host_high_filter_array = (double*)malloc(num_bytes);
 
@@ -88,7 +89,7 @@ double * initHighFilter() {
 }
 
 void transferMemoryBack(int outputLength) {
-    int num_bytes = outputLength * sizeof(double);
+    long num_bytes = outputLength * sizeof(double);
 
     host_output_array = (double*)malloc(num_bytes);
     cudaMemcpy(host_output_array, device_output_array, num_bytes, cudaMemcpyDeviceToHost);  

@@ -44,7 +44,7 @@ __global__ void extend(double * inputSignal, int signalLength, int filterLength,
                        double * extendedSignal) {
 
     int index = blockIdx.x * blockDim.x + threadIdx.x;
-    if(index > signalLength) {
+    if(index >= signalLength) {
         return;
     }
     int sideWidth = filterLength / 2;
@@ -66,7 +66,7 @@ __global__ void extend(double * inputSignal, int signalLength, int filterLength,
 
 double * initLowCoefficientMemory(int signalLength) {
     double * lowCoefficientMemory = 0; 
-    int num_bytes = signalLength * sizeof(double);
+    long num_bytes = signalLength * sizeof(double);
     cudaMalloc((void**)&lowCoefficientMemory, num_bytes);
     return lowCoefficientMemory;
 }
@@ -119,7 +119,7 @@ void dwt(std::vector<int> & L, int levelsToCompress,
         int yThread = -1;
         calculateBlockSize(inputSignalExtendedLength, xThread, yThread);
 
-        extend<<<xThread, yThread>>>(currentDeviceSignal, currentSignalLength, 
+        extend<<<yThread, xThread>>>(currentDeviceSignal, currentSignalLength, 
                             filterLength, deviceLowCoefficientMemory);
 
         ////convolve low filters
@@ -132,12 +132,12 @@ void dwt(std::vector<int> & L, int levelsToCompress,
         }
 
         calculateBlockSize(block_size, xThread, yThread);
-        convolveWavelet<<<xThread, yThread>>>(deviceLowFilter, filterLength, 
+        convolveWavelet<<<yThread, xThread>>>(deviceLowFilter, filterLength, 
                         deviceLowCoefficientMemory, inputSignalExtendedLength,
                         deviceOutputCoefficients, lowCoeffOffset);
         
         ////convolve high filters
-        convolveWavelet<<<xThread, yThread>>>(deviceHighFilter, filterLength, 
+        convolveWavelet<<<yThread, xThread>>>(deviceHighFilter, filterLength, 
                         deviceLowCoefficientMemory, inputSignalExtendedLength,
                         deviceOutputCoefficients, currentHighCoefficientOffset);
 
