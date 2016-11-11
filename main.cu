@@ -4,8 +4,8 @@
 #include <iostream>
 #include <vector>
 
-#define SIGNAL_LENGTH 16
-#define COMPRESSION_LEVELS 2
+#define SIGNAL_LENGTH 32
+#define COMPRESSION_LEVELS 1
 
 //signal
 double * host_signal_array = 0;
@@ -28,27 +28,13 @@ waveletFilter filter;
 std::vector<int> coefficientIndicies; 
 
 double * initSignal() {
-    int signalLenght = SIGNAL_LENGTH;
-    int extendedInputSignalLength = signalLenght + (9 - 1) * 2;
 
-    double totalCoefficientLenght = 
-        calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, 
-                               SIGNAL_LENGTH);
-
-    int num_bytes = extendedInputSignalLength * sizeof(double);
+    int num_bytes = SIGNAL_LENGTH * sizeof(double);
 
     host_signal_array = (double*)malloc(num_bytes);
 
-    for(int i = 0; i < extendedInputSignalLength; i++) {
+    for(int i = 0; i < SIGNAL_LENGTH; i++) {
         host_signal_array[i] = 1.0;
-    }
-
-    for(int i = 0; i < 9 - 1; i++) {
-        host_signal_array[i] = 0.0;
-    }
-    
-    for(int i = 0; i < 9 - 1; i++) {
-        host_signal_array[extendedInputSignalLength - 1 - i] = 0.0;
     }
 
     cudaMalloc((void**)&device_signal_array, num_bytes);
@@ -104,9 +90,9 @@ void printOutputCoefficients(double * hostOutput, std::vector<int> coefficientIn
     for(int i = 0; i < coefficientLevels - 1;i++) {
         std::cerr<<"Level: "<<i<<std::endl;
         int levelCoefficientIndex = coefficientIndicies[i];
-        int numberOfCoefficents = coefficientIndicies[i +1] - coefficientIndicies[i];
+        int numberOfCoefficents = coefficientIndicies[i + 1] - coefficientIndicies[i];
 
-        for(int j = 0; j<numberOfCoefficents;j++) {
+        for(int j = 0; j < numberOfCoefficents; j++) {
             double coeffVal = hostOutput[levelCoefficientIndex + j + offset];
             std::cerr<<coeffVal<<" ";
         }

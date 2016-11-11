@@ -1,4 +1,5 @@
-#define SIGNAL_PAD_VALUE 0.0
+#define SIGNAL_PAD_VALUE 1.0
+#include <iostream>
 #include <vector>
 int calculateCoefficientLength(std::vector<int> &L, int levels,
                                 int inputSignalLength) {
@@ -24,12 +25,12 @@ __global__ void convolveWavelet(double * filter, int filterLength,
                                 double * inputSignal, int signalLength,
                                 double * output, int outputOffset) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
-    int inputIndex = index * 2 + (filterLength - 1); 
+    int inputIndex = index * 2 + (filterLength / 2); 
 
     double sum = 0.0;
 
     for(int i = 0; i < filterLength; i++) {
-        sum += filter[i] * inputSignal[inputIndex - (filterLength - 1) + i];
+        sum += filter[i] * inputSignal[inputIndex - (filterLength / 2) + i];
     }
 
     output[index + outputOffset] = sum; 
@@ -49,13 +50,9 @@ __global__ void extend(double * inputSignal, int signalLength, int filterLength,
 
         extendedSignal[index] = inputSignal[index - sideWidth];
 
-    } else if(index > (sideWidth + signalLength) && (index <= signalLength + sideWidth * 2)) {
+    }  else {
 
         extendedSignal[index] = SIGNAL_PAD_VALUE;
-
-    } else {
-
-        return;
     } 
 }
 
@@ -78,7 +75,7 @@ void dwt(std::vector<int> & L, int levelsToCompress,
     int currentHighCoefficientOffset = 0 + signalLength / 2; 
     //create a tempory low coefficient / signal extend array
      
-    int inputSignalExtendedLength = currentSignalLength + (9 - 1) * 2;
+    int inputSignalExtendedLength = currentSignalLength + (filterLength / 2 ) * 2;
 
     double * deviceLowCoefficientMemory = initLowCoefficientMemory(inputSignalExtendedLength);
     double * currentDeviceSignal = deviceInputSignal;
@@ -89,26 +86,25 @@ void dwt(std::vector<int> & L, int levelsToCompress,
         int outputOffset = 0;
 
         //extend the signal
-        int inputSignalExtendedLength = currentSignalLength + (9 - 1) * 2;
+        int inputSignalExtendedLength = currentSignalLength + (filterLength / 2 ) * 2;
+        std::cerr<<inputSignalExtendedLength<<std::endl;
 
-        extend<<<1, inputSignalExtendedLength>>>(currentDeviceSignal, inputSignalExtendedLength, 
+        extend<<<1, inputSignalExtendedLength>>>(currentDeviceSignal, signalLength, 
                             filterLength, deviceLowCoefficientMemory);
 
         ////convolve low filters
         int block_size = signalLength / 2;
 
         int lowCoeffOffset = 0;
-
         if(level == levelsToCompress - 1) {
             lowCoeffOffset = L[level + 1] + signalLength / 2;
         }
-    
-        convolveWavelet<<<1, block_size>>>(deviceHighFilter, 9, 
+        convolveWavelet<<<1, block_size>>>(deviceLowFilter, 9, 
                         deviceLowCoefficientMemory, inputSignalExtendedLength,
                         deviceOutputCoefficients, lowCoeffOffset);
         
         ////convolve high filters
-        convolveWavelet<<<1, block_size>>>(deviceLowFilter, 9, 
+        convolveWavelet<<<1, block_size>>>(deviceHighFilter, 9, 
                         deviceLowCoefficientMemory, inputSignalExtendedLength,
                         deviceOutputCoefficients, currentHighCoefficientOffset);
 
