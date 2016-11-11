@@ -4,8 +4,8 @@
 #include <iostream>
 #include <vector>
 
-#define SIGNAL_LENGTH 32
-#define COMPRESSION_LEVELS 2
+#define SIGNAL_LENGTH 64
+#define COMPRESSION_LEVELS 3
 
 //signal
 double * host_signal_array = 0;
