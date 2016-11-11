@@ -6,7 +6,7 @@
 #include <iostream>
 #include <chrono>
 
-#define SIGNAL_LENGTH 1048576 
+#define SIGNAL_LENGTH 524288 
 #define COMPRESSION_LEVELS 1
 
 using namespace std;

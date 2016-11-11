@@ -44,6 +44,9 @@ __global__ void extend(double * inputSignal, int signalLength, int filterLength,
                        double * extendedSignal) {
 
     int index = blockIdx.x * blockDim.x + threadIdx.x;
+    if(index > signalLength) {
+        return;
+    }
     int sideWidth = filterLength / 2;
 
     if(index <= sideWidth) {
@@ -73,12 +76,18 @@ void calculateBlockSize(int totalLength,
     
     if(totalLength > MAX_X) {
         x = MAX_X;
-        y = totalLength /  MAX_X;
+        int extra = totalLength % MAX_X;
+        std::cerr <<extra<<std::endl;
+        if(extra != 0) {
+            y = totalLength /  MAX_X + 1;
+        } else {
+            y = totalLength /  MAX_X;
+        }
     } else {
         x = totalLength;
         y = 1;
     }
-    std::cerr<<"dims are:"<<x<<":"<<y<<std::endl;
+    std::cerr<<"given "<<totalLength<<" dims are:"<<x<<":"<<y<<std::endl;
 }
 
 void dwt(std::vector<int> & L, int levelsToCompress,
