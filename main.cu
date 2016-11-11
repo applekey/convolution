@@ -38,6 +38,7 @@ double * initSignal() {
     host_signal_array = (double*)malloc(num_bytes);
 
     for(int i = 0; i < SIGNAL_LENGTH; i++) {
+        /*host_signal_array[i] = 1.0 * sin((double)i /100.0) * 100.0;*/
         host_signal_array[i] = 1.0;
     }
 
