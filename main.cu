@@ -7,8 +7,8 @@
 #include <chrono>
 
 /*#define SIGNAL_LENGTH 536870912 */
-#define SIGNAL_LENGTH 3145728 
-#define COMPRESSION_LEVELS 1
+#define SIGNAL_LENGTH  32 
+#define COMPRESSION_LEVELS 4
 
 using namespace std;
 
@@ -133,14 +133,30 @@ void freeMemory() {
 }
 
 void writeResultsToMemory(double * output, int length) {
+    double epsilon = 0.0000001;
+    double a = -1.41442e-12;
+    double b = 1.41421;
+
     int offset = SIGNAL_LENGTH / 2;
-    ofstream myfile;
-    myfile.open("output.txt");
-    
-    for(int i = 0; i < length; i++) {
-        myfile << output[i + offset]<<"\n";
+    for(int i = 0; i < length/2; i++) {
+        if(abs(a -  output[i + offset]) < epsilon * 1.0e-12 ) {
+            std::cerr<<"error "<<output[i + offset]<<std::endl;
+        }
     }
-    myfile.close();
+    for(int i = length/2; i < length; i++) {
+        if(abs(b -  output[i + offset]) < epsilon) {
+            std::cerr<<"error "<<output[i + offset]<<std::endl;
+        }
+    }
+    return;
+    /*int offset = SIGNAL_LENGTH / 2;*/
+    /*ofstream myfile;*/
+    /*myfile.open("output.txt");*/
+    
+    /*for(int i = 0; i < length; i++) {*/
+        /*myfile << output[i + offset]<<"\n";*/
+    /*}*/
+    /*myfile.close();*/
 }
 
 
@@ -167,10 +183,10 @@ auto start = std::chrono::system_clock::now();
 auto end = std::chrono::system_clock::now();
 std::chrono::duration<double> diff = end-start;
 std::cout<< diff.count() << " s\n";
-    //printOutputCoefficients(host_output_array, coefficientIndicies);
+    printOutputCoefficients(host_output_array, coefficientIndicies);
 
-    int ab = calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, SIGNAL_LENGTH);
-    writeResultsToMemory(host_output_array, ab);
+    /*int ab = calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, SIGNAL_LENGTH);*/
+    /*writeResultsToMemory(host_output_array, ab);*/
 
     //done free memory 
     freeMemory();

@@ -44,14 +44,16 @@ __global__ void extend(double * inputSignal, int signalLength, int filterLength,
                        double * extendedSignal) {
 
     int index = blockIdx.x * blockDim.x + threadIdx.x;
-    if(index >= signalLength) {
-        return;
-    }
+
     int sideWidth = filterLength / 2;
 
-    if(index <= sideWidth) {
+    if(index >= signalLength + sideWidth * 2) {
+        return;
+    }
 
-        extendedSignal[index] = inputSignal[sideWidth];
+    if(index < sideWidth) {
+
+        extendedSignal[index] = inputSignal[0];
 
     } else if(index < sideWidth + signalLength) {
 
@@ -60,7 +62,7 @@ __global__ void extend(double * inputSignal, int signalLength, int filterLength,
     }  else {
 
         //extendedSignal[index] = SIGNAL_PAD_VALUE;
-        extendedSignal[index] = inputSignal[sideWidth];
+        extendedSignal[index] = inputSignal[0];
     } 
 }
 
@@ -77,7 +79,6 @@ void calculateBlockSize(int totalLength,
     if(totalLength > MAX_X) {
         x = MAX_X;
         int extra = totalLength % MAX_X;
-        std::cerr <<extra<<std::endl;
         if(extra != 0) {
             y = totalLength /  MAX_X + 1;
         } else {
@@ -88,6 +89,21 @@ void calculateBlockSize(int totalLength,
         y = 1;
     }
     std::cerr<<"given "<<totalLength<<" dims are:"<<x<<":"<<y<<std::endl;
+}
+
+void debugLowMemory(double * deviceMem, int length) {
+    return; //do nothing
+    std::cerr<<"Debugging Low memory"<<std::endl;
+    long num_bytes = length * sizeof(double);
+
+    double * tmp = (double*)malloc(num_bytes);
+    cudaMemcpy(tmp, deviceMem, num_bytes, cudaMemcpyDeviceToHost);  
+
+    for(int i = 0; i< length; i++) {
+        std::cerr<<tmp[i]<<std::endl;
+    } 
+    delete [] tmp;
+    std::cerr<<"Debugging Low memory Stop"<<std::endl;
 }
 
 void dwt(std::vector<int> & L, int levelsToCompress,
@@ -122,9 +138,9 @@ void dwt(std::vector<int> & L, int levelsToCompress,
         extend<<<yThread, xThread>>>(currentDeviceSignal, currentSignalLength, 
                             filterLength, deviceLowCoefficientMemory);
 
+        debugLowMemory(deviceLowCoefficientMemory, inputSignalExtendedLength);
         ////convolve low filters
         int block_size = currentSignalLength / 2;
-        std::cerr<<block_size<<std::endl;
 
         int lowCoeffOffset = 0;
         if(level == levelsToCompress - 1) {
@@ -141,12 +157,13 @@ void dwt(std::vector<int> & L, int levelsToCompress,
                         deviceLowCoefficientMemory, inputSignalExtendedLength,
                         deviceOutputCoefficients, currentHighCoefficientOffset);
 
+
         currentSignalLength /= 2;
         currentHighCoefficientOffset = L[level + 1] + signalLength / 2;
         currentDeviceSignal = deviceOutputCoefficients;
     }
     //finally copy the low coefficients to the end 
-    
+        
     //free tmp memory
     cudaFree(deviceLowCoefficientMemory);
 }
