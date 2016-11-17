@@ -68,7 +68,8 @@ __global__ void extend(double * inputSignal, int signalLength, int filterLength,
 
 __global__ void inverseConvolve(double * lowReconstructFilter, double * highReconstructFilter,
                                 int filterLength, 
-                                double * highLowCoefficients, double * reconstructedSignal,
+                                double * lowCoefficients, double * highCoefficients,
+                                double * reconstructedSignal,
                                 int signalLength) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     if(index >= signalLength) {
@@ -144,18 +145,47 @@ void debugLowMemory(double * deviceMem, int length) {
 }
 
 void Idwt(std::vector<int> & L, int levelsToReconstruct, 
-          int signalLength, 
-          double * coefficients) {
+          int signalLength, int filterLength, 
+          double * coefficients,
+          double * deviceLowReconstructFilter,
+          double * deviceHighReconstructFilter,
+          double * reconstructedSignal) {
+
     int maxExtendedSignalLength = signalLength;
-    //allocate
-    int currentCoefficientIndex = L.size(); 
-    double * extendedHighCoeff;
-    double * extendedLowCoeff;
+
+    double * extendedHighCoeff = initTmpCoefficientMemory(maxExtendedSignalLength);
+    double * extendedLowCoeff = initTmpCoefficientMemory(maxExtendedSignalLength);
+
+    int currentCoefficientIndex = L.size() - 2; 
+
+    int currentSignalLength = L[currentCoefficientIndex + 1] - L[currentCoefficientIndex + 1];
+
+    int currentExtendedCoefficientLenght = 
+                currentSignalLength + (filterLength - 1) * 2;
+    
+    int blocks, threads;
+    calculateBlockSize(currentExtendedCoefficientLenght, threads, blocks);
+    
+    int coefficientOffsetLow = L[currentCoefficientIndex];
+    int coefficientOffsetHigh = L[currentCoefficientIndex + 1];
+
+    extend<<<threads, blocks>>>(coefficients + coefficientOffsetLow, currentExtendedCoefficientLenght, 
+                        filterLength, extendedHighCoeff);
+    
+    extend<<<threads, blocks>>>(coefficients + coefficientOffsetHigh, currentExtendedCoefficientLenght, 
+                        filterLength, extendedLowCoeff);
+
+    calculateBlockSize(currentSignalLength * 2, threads, blocks);
+
+    inverseConvolve<<<threads, blocks>>>(deviceLowReconstructFilter, deviceHighReconstructFilter,
+                                         filterLength, extendedHighCoeff, extendedLowCoeff,
+                                         reconstructedSignal, currentSignalLength * 2);
     
     for(int i = 1; i < levelsToReconstruct; i++) {
         
-        //extend signals
     }
+    cudaFree(extendedHighCoeff);
+    cudaFree(extendedLowCoeff);
 }
 
 void dwt(std::vector<int> & L, int levelsToCompress,
