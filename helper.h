@@ -1,9 +1,9 @@
 #define SIGNAL_PAD_VALUE 1.0
 #include <iostream>
 #include <vector>
+#include <cassert>
 
 #define MAX_X 1024
-#define MAX_Y 1024
 
 int calculateCoefficientLength(std::vector<int> &L, int levels,
                                 int inputSignalLength) {
@@ -66,9 +66,46 @@ __global__ void extend(double * inputSignal, int signalLength, int filterLength,
     } 
 }
 
-double * initLowCoefficientMemory(int signalLength) {
+__global__ void inverseConvolve(double * lowReconstructFilter, double * highReconstructFilter,
+                                int filterLength, 
+                                double * highLowCoefficients, double * reconstructedSignal,
+                                int signalLength) {
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    if(index >= signalLength) {
+        return;
+    }
+
+    double sum = 0.0;
+    int lowIndex, highIndex;
+
+    if( index % 2 != 0) {
+        lowIndex = filterLength - 2; 
+        highIndex = filterLength - 1;
+    } else {
+        lowIndex = filterLength - 1; 
+        highIndex = filterLength - 2;
+    }
+    //sum low
+    int lowCoefficientIndex = (index + 1) / 2;
+    while(lowCoefficientIndex > -1) {
+        sum += lowReconstructFilter[lowCoefficientIndex]; 
+        lowCoefficientIndex -= 2;
+    }
+
+    //sum high
+    int highCoefficientIndex = (index) / 2;
+    while(highCoefficientIndex > -1) {
+        sum += highReconstructFilter[highCoefficientIndex]; 
+        highCoefficientIndex -= 2;
+    }
+    //write out sum
+    reconstructedSignal[index] = sum;
+}
+
+double * initTmpCoefficientMemory(int signalLength) {
     double * lowCoefficientMemory = 0; 
-    long num_bytes = signalLength * sizeof(double);
+    long long num_bytes = signalLength * sizeof(double);
+    assert(num_bytes != 0);
     cudaMalloc((void**)&lowCoefficientMemory, num_bytes);
     return lowCoefficientMemory;
 }
@@ -92,9 +129,9 @@ void calculateBlockSize(int totalLength,
 }
 
 void debugLowMemory(double * deviceMem, int length) {
-    return; //do nothing
     std::cerr<<"Debugging Low memory"<<std::endl;
-    long num_bytes = length * sizeof(double);
+    length = 10;
+    long long num_bytes = length * sizeof(double);
 
     double * tmp = (double*)malloc(num_bytes);
     cudaMemcpy(tmp, deviceMem, num_bytes, cudaMemcpyDeviceToHost);  
@@ -104,6 +141,21 @@ void debugLowMemory(double * deviceMem, int length) {
     } 
     delete [] tmp;
     std::cerr<<"Debugging Low memory Stop"<<std::endl;
+}
+
+void Idwt(std::vector<int> & L, int levelsToReconstruct, 
+          int signalLength, 
+          double * coefficients) {
+    int maxExtendedSignalLength = signalLength;
+    //allocate
+    int currentCoefficientIndex = L.size(); 
+    double * extendedHighCoeff;
+    double * extendedLowCoeff;
+    
+    for(int i = 1; i < levelsToReconstruct; i++) {
+        
+        //extend signals
+    }
 }
 
 void dwt(std::vector<int> & L, int levelsToCompress,
@@ -120,7 +172,7 @@ void dwt(std::vector<int> & L, int levelsToCompress,
      
     int inputSignalExtendedLength = currentSignalLength + (filterLength / 2 ) * 2;
 
-    double * deviceLowCoefficientMemory = initLowCoefficientMemory(inputSignalExtendedLength);
+    double * deviceLowCoefficientMemory = initTmpCoefficientMemory(inputSignalExtendedLength);
     double * currentDeviceSignal = deviceInputSignal;
 
     for(int level = 0; level < levelsToCompress; level++) {
@@ -138,7 +190,7 @@ void dwt(std::vector<int> & L, int levelsToCompress,
         extend<<<yThread, xThread>>>(currentDeviceSignal, currentSignalLength, 
                             filterLength, deviceLowCoefficientMemory);
 
-        debugLowMemory(deviceLowCoefficientMemory, inputSignalExtendedLength);
+        //debugLowMemory(deviceLowCoefficientMemory, inputSignalExtendedLength);
         ////convolve low filters
         int block_size = currentSignalLength / 2;
 

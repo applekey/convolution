@@ -4,6 +4,9 @@ private:
     int filterLength = 9;
     double * lowPassFilter;
     double * highPassFilter;
+    
+    double * lowReconstructFilter;
+    double * highReconstructFilter;
 
 public:
     void getLowPassFilter(double * copyTo) {
@@ -12,6 +15,14 @@ public:
 
     void getHighPassFilter(double * copyTo) {
         memcpy(copyTo, highPassFilter, filterLength * sizeof(double));
+    }
+
+    void getLowReconstructFilter(double * copyTo) {
+        memcpy(copyTo, lowReconstructFilter, filterLength * sizeof(double));
+    }
+
+    void getHighReconstructFilter(double * copyTo) {
+        memcpy(copyTo, highReconstructFilter, filterLength * sizeof(double));
     }
 
     int getFilterLength() {
@@ -38,7 +49,10 @@ public:
         allocateFilterMemory();
         reverseFilter(hm4_44, lowPassFilter);
         qmfReverseFilter(h4, highPassFilter);
+        lowReconstructFilter = h4;
+        qmfFilter(hm4_44, highReconstructFilter);
     }
+
 
     void reverseFilter(double * input, double * output) {
         for(int i = 0; i < filterLength; i++) {
