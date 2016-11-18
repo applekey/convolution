@@ -144,7 +144,7 @@ void debugLowMemory(double * deviceMem, int length) {
     std::cerr<<"Debugging Low memory Stop"<<std::endl;
 }
 
-void Idwt(std::vector<int> & L, int levelsToReconstruct, 
+void iDwt(std::vector<int> & L, int levelsToReconstruct, 
           int signalLength, int filterLength, 
           double * coefficients,
           double * deviceLowReconstructFilter,

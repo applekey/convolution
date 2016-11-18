@@ -30,6 +30,18 @@ double * device_low_filter_array = 0;
 double * host_high_filter_array = 0;
 double * device_high_filter_array = 0;
 
+//low reconstruct filters
+double * host_low_reconstruct_filter_array = 0;
+double * device_low_reconstruct_filter_array = 0;
+
+//high reconstruct filters
+double * host_high_reconstruct_filter_array = 0;
+double * device_high_reconstruct_filter_array = 0;
+
+//reconstructed signal
+double * host_reconstruct_output_array = 0;
+double * device_reconstruted_output_array = 0;
+
 waveletFilter filter;
 
 std::vector<int> coefficientIndicies; 
@@ -56,6 +68,15 @@ void copyInputSignal() {
          printf("The error is %s", cudaGetErrorString(err));
     }
     cudaMemcpy(device_signal_array, host_signal_array, num_bytes, cudaMemcpyHostToDevice);
+}
+
+void initReconstructedSignal() {
+    long long num_bytes = SIGNAL_LENGTH * sizeof(double);
+    cudaError_t err = cudaMalloc((void**)&device_signal_array, num_bytes);
+
+    if(err != cudaSuccess){
+         printf("The error is %s", cudaGetErrorString(err));
+    }
 }
 
 void initOutput(int outputLength) {
@@ -90,6 +111,31 @@ void initHighFilter() {
     cudaMalloc((void**)&device_high_filter_array, num_bytes);
 
     cudaMemcpy(device_high_filter_array, host_high_filter_array, num_bytes, cudaMemcpyHostToDevice);
+}
+
+void initLowReconstructFilter() {
+    int lowFilterLenght = 9;
+    long long num_bytes = lowFilterLenght * sizeof(double);
+
+    host_low_reconstruct_filter_array = (double*)malloc(num_bytes);
+
+    filter.getLowReconstructFilter(host_low_filter_array);
+
+    cudaMalloc((void**)&device_low_reconstruct_filter_array, num_bytes);
+
+    cudaMemcpy(device_low_reconstruct_filter_array, host_low_reconstruct_filter_array, num_bytes, cudaMemcpyHostToDevice);
+}
+
+void initHighReconstructFilter() {
+    int highFilterLenght = 9;
+    long long num_bytes = highFilterLenght * sizeof(double);
+
+    host_high_reconstruct_filter_array = (double*)malloc(num_bytes);
+
+    filter.getHighReconstructFilter(host_high_reconstruct_filter_array);
+    cudaMalloc((void**)&device_high_reconstruct_filter_array, num_bytes);
+
+    cudaMemcpy(device_high_reconstruct_filter_array, host_high_reconstruct_filter_array, num_bytes, cudaMemcpyHostToDevice);
 }
 
 void transferMemoryBack(int outputLength) {
@@ -138,6 +184,12 @@ void freeMemory() {
 
     free(host_high_filter_array);
     cudaFree(device_high_filter_array);
+
+    free(host_low_reconstruct_filter_array);
+    cudaFree(device_low_reconstruct_filter_array);
+
+    free(host_high_reconstruct_filter_array);
+    cudaFree(device_high_reconstruct_filter_array);
 }
 
 void writeResultsToMemory(double * output, int length) {
@@ -175,9 +227,13 @@ int main(int argc, const char * argv[]) {
     filter.constructFilters();
     initLowFilter();
     initHighFilter();
+    initLowReconstructFilter();
+    initHighReconstructFilter();
     initSignal();
     initOutput(outputLength);
+    initReconstructedSignal();
 
+/*-------------------COMPRESS THE SIGNAL---------------------*/
 auto start = std::chrono::system_clock::now();
     copyInputSignal();
     //run filter   
@@ -197,6 +253,15 @@ std::cout<< diff.count() << " s\n";
     /*int ab = calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, SIGNAL_LENGTH);*/
     /*writeResultsToMemory(host_output_array, ab);*/
 
+/*-------------------UN-COMPRESS THE SIGNAL---------------------*/
+
+    iDwt(coefficientIndicies, COMPRESSION_LEVELS, 
+         SIGNAL_LENGTH, 9, device_output_array,
+         device_low_reconstruct_filter_array,
+         device_high_reconstruct_filter_array,
+         device_reconstruted_output_array);
+        
+        
     //done free memory 
     freeMemory();
 
