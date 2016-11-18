@@ -8,8 +8,8 @@
 #include <cassert>
 
 /*#define SIGNAL_LENGTH 134217728 */
-#define SIGNAL_LENGTH 67108864 
-/*#define SIGNAL_LENGTH  32 */
+/*#define SIGNAL_LENGTH 67108864 */
+#define SIGNAL_LENGTH  32 
 #define COMPRESSION_LEVELS 1
 
 using namespace std;
@@ -139,13 +139,22 @@ void initHighReconstructFilter() {
 }
 
 void transferMemoryBack(int outputLength) {
-    std::cerr<<outputLength<<std::endl;
-    long long num_bytes = outputLength * sizeof(double);
     outputLength -=SIGNAL_LENGTH / 2; 
+    long long num_bytes = outputLength * sizeof(double);
     assert(num_bytes != 0);
 
     host_output_array = (double*)malloc(num_bytes);
-    cudaMemcpy(host_output_array, device_output_array, num_bytes, cudaMemcpyDeviceToHost);  
+    cudaMemcpy(host_output_array, device_output_array + SIGNAL_LENGTH / 2, num_bytes, cudaMemcpyDeviceToHost);  
+    /*cudaMemcpy(host_output_array, device_output_array, num_bytes, cudaMemcpyDeviceToHost);  */
+}
+
+void transferReconstructedMemoryBack(int outputLength) {
+    long long num_bytes = outputLength * sizeof(double);
+    assert(num_bytes != 0);
+
+    host_reconstruct_output_array = (double*)malloc(num_bytes);
+    cudaMemcpy(host_reconstruct_output_array, device_reconstruted_output_array, 
+               num_bytes, cudaMemcpyDeviceToHost);  
 }
 
 void printOutputCoefficients(double * hostOutput, std::vector<int> coefficientIndicies) {
@@ -170,6 +179,14 @@ void printOutputCoefficients(double * hostOutput, std::vector<int> coefficientIn
         }
         std::cerr<<std::endl;
     }
+}
+
+void printReconstructedSignal() {
+    std::cerr<<"Reconstructed Signal"<<std::endl;
+    for(int i = 0 ; i< SIGNAL_LENGTH; i++) {
+        std::cerr<<host_reconstruct_output_array[i]<<" ";
+    } 
+    std::cerr<<std::endl;
 }
 
 void freeMemory() {
@@ -248,7 +265,7 @@ auto start = std::chrono::system_clock::now();
 auto end = std::chrono::system_clock::now();
 std::chrono::duration<double> diff = end-start;
 std::cout<< diff.count() << " s\n";
-    /*printOutputCoefficients(host_output_array, coefficientIndicies);*/
+    printOutputCoefficients(host_output_array, coefficientIndicies);
 
     /*int ab = calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, SIGNAL_LENGTH);*/
     /*writeResultsToMemory(host_output_array, ab);*/
@@ -260,8 +277,11 @@ std::cout<< diff.count() << " s\n";
          device_low_reconstruct_filter_array,
          device_high_reconstruct_filter_array,
          device_reconstruted_output_array);
-        
-        
+
+    transferReconstructedMemoryBack(SIGNAL_LENGTH);
+    printReconstructedSignal();
+
+/*-------------------CLEAN-UP---------------------*/
     //done free memory 
     freeMemory();
 

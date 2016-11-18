@@ -33,12 +33,14 @@ public:
         //cuda alloc here
         lowPassFilter = new double[filterLength];
         highPassFilter = new double[filterLength];
+        highReconstructFilter = new double[filterLength];
     }
 
     void deallocFilterMemory() {
         //cuda dealloc here
         delete [] lowPassFilter;
         delete [] highPassFilter;
+        delete [] highReconstructFilter;
     }
 
     ~waveletFilter() {
