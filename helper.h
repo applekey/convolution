@@ -88,16 +88,16 @@ __global__ void inverseConvolve(double * lowReconstructFilter, double * highReco
     }
     //sum low
     int lowCoefficientIndex = (index + 1) / 2;
-    while(lowCoefficientIndex > -1) {
-        sum += lowReconstructFilter[lowCoefficientIndex]; 
-        lowCoefficientIndex -= 2;
+    while(lowIndex > -1) {
+        sum += lowReconstructFilter[lowIndex] * lowCoefficients[lowCoefficientIndex + filterLength/2 + lowIndex]; 
+        lowIndex -= 2;
     }
 
     //sum high
     int highCoefficientIndex = (index) / 2;
-    while(highCoefficientIndex > -1) {
-        sum += highReconstructFilter[highCoefficientIndex]; 
-        highCoefficientIndex -= 2;
+    while(highIndex > -1) {
+        sum += highReconstructFilter[lowIndex] * highCoefficients[highCoefficientIndex + filterLength/2 + highIndex]; 
+        highIndex -= 2;
     }
     //write out sum
     reconstructedSignal[index] = sum;
@@ -131,7 +131,6 @@ void calculateBlockSize(int totalLength,
 
 void debugTmpMemory(double * deviceMem, int length) {
     std::cerr<<"Debugging Tmp memory"<<std::endl;
-    length = 10;
     long long num_bytes = length * sizeof(double);
 
     double * tmp = (double*)malloc(num_bytes);
@@ -161,7 +160,9 @@ void iDwt(std::vector<int> & L, int levelsToReconstruct,
     int currentSignalLength = L[currentCoefficientIndex + 1] - L[currentCoefficientIndex];
 
     int currentExtendedCoefficientLenght = 
-                currentSignalLength + (filterLength - 1) * 2;
+                currentSignalLength + (filterLength / 2) * 2;
+
+    std::cerr<<currentExtendedCoefficientLenght<<std::endl;
     
     int blocks, threads;
     calculateBlockSize(currentExtendedCoefficientLenght, threads, blocks);
@@ -181,12 +182,12 @@ void iDwt(std::vector<int> & L, int levelsToReconstruct,
     calculateBlockSize(currentSignalLength * 2, threads, blocks);
 
     inverseConvolve<<<threads, blocks>>>(deviceLowReconstructFilter, deviceHighReconstructFilter,
-                                         filterLength, extendedHighCoeff, extendedLowCoeff,
+                                         filterLength, extendedLowCoeff, extendedHighCoeff,
                                          reconstructedSignal, currentSignalLength * 2);
     
-    for(int i = 1; i < levelsToReconstruct; i++) {
+    //for(int i = 1; i < levelsToReconstruct; i++) {
         
-    }
+    //}
     cudaFree(extendedHighCoeff);
     cudaFree(extendedLowCoeff);
 }

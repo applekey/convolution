@@ -18,7 +18,7 @@ public:
     }
 
     void getLowReconstructFilter(double * copyTo) {
-        memcpy(copyTo, lowReconstructFilter, filterLength * sizeof(double));
+        memcpy(copyTo, h4, filterLength * sizeof(double));
     }
 
     void getHighReconstructFilter(double * copyTo) {
@@ -30,14 +30,12 @@ public:
     }
 
     void allocateFilterMemory() {
-        //cuda alloc here
         lowPassFilter = new double[filterLength];
         highPassFilter = new double[filterLength];
         highReconstructFilter = new double[filterLength];
     }
 
     void deallocFilterMemory() {
-        //cuda dealloc here
         delete [] lowPassFilter;
         delete [] highPassFilter;
         delete [] highReconstructFilter;

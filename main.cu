@@ -72,7 +72,7 @@ void copyInputSignal() {
 
 void initReconstructedSignal() {
     long long num_bytes = SIGNAL_LENGTH * sizeof(double);
-    cudaError_t err = cudaMalloc((void**)&device_signal_array, num_bytes);
+    cudaError_t err = cudaMalloc((void**)&device_reconstruted_output_array, num_bytes);
 
     if(err != cudaSuccess){
          printf("The error is %s", cudaGetErrorString(err));
@@ -119,8 +119,7 @@ void initLowReconstructFilter() {
 
     host_low_reconstruct_filter_array = (double*)malloc(num_bytes);
 
-    filter.getLowReconstructFilter(host_low_filter_array);
-
+    filter.getLowReconstructFilter(host_low_reconstruct_filter_array);
     cudaMalloc((void**)&device_low_reconstruct_filter_array, num_bytes);
 
     cudaMemcpy(device_low_reconstruct_filter_array, host_low_reconstruct_filter_array, num_bytes, cudaMemcpyHostToDevice);
@@ -270,8 +269,20 @@ std::cout<< diff.count() << " s\n";
     /*int ab = calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, SIGNAL_LENGTH);*/
     /*writeResultsToMemory(host_output_array, ab);*/
 
-/*-------------------UN-COMPRESS THE SIGNAL---------------------*/
+/*-------------------DEBUG---------------------*/
+/*std::cerr<<"low"<<std::endl;*/
+/*for(int i = 0;i < 9; i++ ) {*/
+    /*std::cerr<<host_low_reconstruct_filter_array[i]<<std::endl;*/
+/*}*/
 
+/*std::cerr<<"break"<<std::endl;*/
+
+/*std::cerr<<"high"<<std::endl;*/
+/*for(int i = 0;i < 9; i++ ) {*/
+    /*std::cerr<<host_high_reconstruct_filter_array[i]<<std::endl;*/
+/*}*/
+
+/*-------------------UN-COMPRESS THE SIGNAL---------------------*/
     iDwt(coefficientIndicies, COMPRESSION_LEVELS, 
          SIGNAL_LENGTH, 9, device_output_array + SIGNAL_LENGTH / 2,
          device_low_reconstruct_filter_array,
