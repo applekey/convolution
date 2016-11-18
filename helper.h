@@ -129,8 +129,8 @@ void calculateBlockSize(int totalLength,
     std::cerr<<"given "<<totalLength<<" dims are:"<<x<<":"<<y<<std::endl;
 }
 
-void debugLowMemory(double * deviceMem, int length) {
-    std::cerr<<"Debugging Low memory"<<std::endl;
+void debugTmpMemory(double * deviceMem, int length) {
+    std::cerr<<"Debugging Tmp memory"<<std::endl;
     length = 10;
     long long num_bytes = length * sizeof(double);
 
@@ -141,7 +141,7 @@ void debugLowMemory(double * deviceMem, int length) {
         std::cerr<<tmp[i]<<std::endl;
     } 
     delete [] tmp;
-    std::cerr<<"Debugging Low memory Stop"<<std::endl;
+    std::cerr<<"Debugging Tmp memory Stop"<<std::endl;
 }
 
 void iDwt(std::vector<int> & L, int levelsToReconstruct, 
@@ -156,9 +156,9 @@ void iDwt(std::vector<int> & L, int levelsToReconstruct,
     double * extendedHighCoeff = initTmpCoefficientMemory(maxExtendedSignalLength);
     double * extendedLowCoeff = initTmpCoefficientMemory(maxExtendedSignalLength);
 
-    int currentCoefficientIndex = L.size() - 2; 
+    int currentCoefficientIndex = L.size() - 2 - 1; 
 
-    int currentSignalLength = L[currentCoefficientIndex + 1] - L[currentCoefficientIndex + 1];
+    int currentSignalLength = L[currentCoefficientIndex + 1] - L[currentCoefficientIndex];
 
     int currentExtendedCoefficientLenght = 
                 currentSignalLength + (filterLength - 1) * 2;
@@ -170,10 +170,13 @@ void iDwt(std::vector<int> & L, int levelsToReconstruct,
     int coefficientOffsetHigh = L[currentCoefficientIndex + 1];
 
     extend<<<threads, blocks>>>(coefficients + coefficientOffsetLow, currentExtendedCoefficientLenght, 
-                        filterLength, extendedHighCoeff);
+                        filterLength, extendedLowCoeff);
     
     extend<<<threads, blocks>>>(coefficients + coefficientOffsetHigh, currentExtendedCoefficientLenght, 
-                        filterLength, extendedLowCoeff);
+                        filterLength, extendedHighCoeff);
+
+    debugTmpMemory(extendedLowCoeff, currentExtendedCoefficientLenght);
+    debugTmpMemory(extendedHighCoeff, currentExtendedCoefficientLenght);
 
     calculateBlockSize(currentSignalLength * 2, threads, blocks);
 
@@ -220,7 +223,7 @@ void dwt(std::vector<int> & L, int levelsToCompress,
         extend<<<yThread, xThread>>>(currentDeviceSignal, currentSignalLength, 
                             filterLength, deviceLowCoefficientMemory);
 
-        //debugLowMemory(deviceLowCoefficientMemory, inputSignalExtendedLength);
+        //debugTmpMemory(deviceLowCoefficientMemory, inputSignalExtendedLength);
         ////convolve low filters
         int block_size = currentSignalLength / 2;
 

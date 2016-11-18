@@ -273,7 +273,7 @@ std::cout<< diff.count() << " s\n";
 /*-------------------UN-COMPRESS THE SIGNAL---------------------*/
 
     iDwt(coefficientIndicies, COMPRESSION_LEVELS, 
-         SIGNAL_LENGTH, 9, device_output_array,
+         SIGNAL_LENGTH, 9, device_output_array + SIGNAL_LENGTH / 2,
          device_low_reconstruct_filter_array,
          device_high_reconstruct_filter_array,
          device_reconstruted_output_array);
