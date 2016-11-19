@@ -10,7 +10,7 @@
 /*#define SIGNAL_LENGTH 134217728 */
 /*#define SIGNAL_LENGTH 67108864 */
 #define SIGNAL_LENGTH  32 
-#define COMPRESSION_LEVELS 1
+#define COMPRESSION_LEVELS 3
 
 using namespace std;
 
