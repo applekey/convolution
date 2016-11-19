@@ -131,7 +131,7 @@ void calculateBlockSize(int totalLength,
         x = totalLength;
         y = 1;
     }
-    std::cerr<<"given "<<totalLength<<" dims are:"<<x<<":"<<y<<std::endl;
+    //std::cerr<<"given "<<totalLength<<" dims are:"<<x<<":"<<y<<std::endl;
 }
 
 void debugTmpMemory(double * deviceMem, int length) {
@@ -170,8 +170,6 @@ void iDwt(std::vector<int> & L, int levelsToReconstruct,
         int currentExtendedCoefficientLenght = 
                     currentSignalLength + (filterLength / 2) * 2;
 
-        std::cerr<<currentExtendedCoefficientLenght<<std::endl;
-        
         int blocks, threads;
         calculateBlockSize(currentExtendedCoefficientLenght, threads, blocks);
         

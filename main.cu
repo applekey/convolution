@@ -9,7 +9,9 @@
 
 /*#define SIGNAL_LENGTH 134217728 */
 /*#define SIGNAL_LENGTH 67108864 */
-#define SIGNAL_LENGTH  32 
+/*#define SIGNAL_LENGTH 1048576 */
+#define SIGNAL_LENGTH 524288 
+/*#define SIGNAL_LENGTH  32 */
 #define COMPRESSION_LEVELS 3
 
 using namespace std;
@@ -187,6 +189,24 @@ void printReconstructedSignal() {
     } 
     std::cerr<<std::endl;
 }
+bool isCloseTo(double a, double b, double epsilon) {
+    if(abs(a-b) < epsilon) {
+        return true;
+    } else {
+        return false;
+    }
+}
+void verifyReconstructedSignal() {
+    bool allCorrect = true;
+    std::cerr<<"Verifiying Signal"<<std::endl;
+    for(int i = 0 ; i< SIGNAL_LENGTH; i++) {
+        if(!isCloseTo(host_reconstruct_output_array[i],1, 0.0001)) {
+         std::cerr<<host_reconstruct_output_array[i]<<std::endl;
+          allCorrect = false;  
+        }
+    } 
+    assert(allCorrect);
+}
 
 void freeMemory() {
     free(host_signal_array);
@@ -250,7 +270,7 @@ int main(int argc, const char * argv[]) {
     initReconstructedSignal();
 
 /*-------------------COMPRESS THE SIGNAL---------------------*/
-auto start = std::chrono::system_clock::now();
+auto startDecompose = std::chrono::system_clock::now();
     copyInputSignal();
     //run filter   
     dwt(coefficientIndicies, COMPRESSION_LEVELS, 
@@ -261,10 +281,10 @@ auto start = std::chrono::system_clock::now();
     //transfer output back
     transferMemoryBack(outputLength);
 
-auto end = std::chrono::system_clock::now();
-std::chrono::duration<double> diff = end-start;
+auto endDecompose = std::chrono::system_clock::now();
+std::chrono::duration<double> diff = endDecompose-startDecompose;
 std::cout<< diff.count() << " s\n";
-    printOutputCoefficients(host_output_array, coefficientIndicies);
+    /*printOutputCoefficients(host_output_array, coefficientIndicies);*/
 
     /*int ab = calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, SIGNAL_LENGTH);*/
     /*writeResultsToMemory(host_output_array, ab);*/
@@ -283,6 +303,7 @@ std::cout<< diff.count() << " s\n";
 /*}*/
 
 /*-------------------UN-COMPRESS THE SIGNAL---------------------*/
+auto startReconstruct = std::chrono::system_clock::now();
     iDwt(coefficientIndicies, COMPRESSION_LEVELS, 
          SIGNAL_LENGTH, 9, device_output_array + SIGNAL_LENGTH / 2,
          device_low_reconstruct_filter_array,
@@ -290,7 +311,12 @@ std::cout<< diff.count() << " s\n";
          device_reconstruted_output_array);
 
     transferReconstructedMemoryBack(SIGNAL_LENGTH);
-    printReconstructedSignal();
+auto endReconstruct = std::chrono::system_clock::now();
+diff = endReconstruct-startReconstruct;
+std::cout<< diff.count() << " s\n";
+    /*printReconstructedSignal();*/
+    verifyReconstructedSignal();
+    /*printReconstructedSignal();*/
 
 /*-------------------CLEAN-UP---------------------*/
     //done free memory 
