@@ -209,7 +209,6 @@ void dwt(std::vector<int> & L, int levelsToCompress,
          double * deviceOutputCoefficients,
          int filterLength) {
 
-    int gridSize = 1;
     int currentSignalLength = signalLength;
     int currentHighCoefficientOffset = 0 + signalLength / 2; 
     //create a tempory low coefficient / signal extend array
@@ -220,9 +219,6 @@ void dwt(std::vector<int> & L, int levelsToCompress,
     double * currentDeviceSignal = deviceInputSignal;
 
     for(int level = 0; level < levelsToCompress; level++) {
-
-        //convolve high filters
-        int outputOffset = 0;
 
         //extend the signal
         int inputSignalExtendedLength = currentSignalLength + (filterLength / 2 ) * 2;

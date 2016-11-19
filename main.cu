@@ -14,7 +14,14 @@
 /*#define SIGNAL_LENGTH  32 */
 #define COMPRESSION_LEVELS 3
 
+typedef long long int64;
+
 using namespace std;
+
+struct myVector {
+    int size;
+    int64 indicies[1000];
+};
 
 //signal
 double * host_signal_array = 0;
@@ -46,7 +53,6 @@ double * device_reconstruted_output_array = 0;
 
 waveletFilter filter;
 
-std::vector<int> coefficientIndicies; 
 
 void initSignal() {
 
@@ -257,6 +263,7 @@ void writeResultsToMemory(double * output, int length) {
 
 
 int main(int argc, const char * argv[]) {
+    std::vector<int> coefficientIndicies; 
     int outputLength = calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, SIGNAL_LENGTH);
     outputLength += SIGNAL_LENGTH / 2; //add extra for buffer for first low coefficient
 
