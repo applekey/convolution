@@ -18,11 +18,6 @@ typedef long long int64;
 
 using namespace std;
 
-struct myVector {
-    int size;
-    int64 indicies[1000];
-};
-
 //signal
 double * host_signal_array = 0;
 double * device_signal_array = 0;
@@ -164,7 +159,7 @@ void transferReconstructedMemoryBack(int outputLength) {
                num_bytes, cudaMemcpyDeviceToHost);  
 }
 
-void printOutputCoefficients(double * hostOutput, std::vector<int> coefficientIndicies) {
+void printOutputCoefficients(double * hostOutput, MyVector & coefficientIndicies) {
     int offset = 0;
     /*int offset = SIGNAL_LENGTH / 2;*/
     int coefficientLevels = coefficientIndicies.size();
@@ -263,7 +258,8 @@ void writeResultsToMemory(double * output, int length) {
 
 
 int main(int argc, const char * argv[]) {
-    std::vector<int> coefficientIndicies; 
+    MyVector coefficientIndicies;
+
     int outputLength = calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, SIGNAL_LENGTH);
     outputLength += SIGNAL_LENGTH / 2; //add extra for buffer for first low coefficient
 

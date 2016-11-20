@@ -5,7 +5,25 @@
 
 #define MAX_X 1024
 
-int calculateCoefficientLength(std::vector<int> &L, int levels,
+typedef long long int64;
+struct MyVector {
+    int currentSize = 0;
+    int64 indicies[1000];
+
+    int64 & operator[](int idx) { 
+        return indicies[idx]; 
+    }
+
+    void resize(int newSize) {
+        currentSize = newSize;  
+    }
+
+    int size() {
+        return currentSize;
+    }
+};
+
+int calculateCoefficientLength(MyVector &L, int levels,
                                 int inputSignalLength) {
 
     int totalLength = 0;
@@ -148,7 +166,7 @@ void debugTmpMemory(double * deviceMem, int length) {
     std::cerr<<"Debugging Tmp memory Stop"<<std::endl;
 }
 
-void iDwt(std::vector<int> & L, int levelsToReconstruct, 
+void iDwt(MyVector & L, int levelsToReconstruct, 
           int signalLength, int filterLength, 
           double * coefficients,
           double * deviceLowReconstructFilter,
@@ -202,7 +220,7 @@ void iDwt(std::vector<int> & L, int levelsToReconstruct,
     cudaFree(extendedLowCoeff);
 }
 
-void dwt(std::vector<int> & L, int levelsToCompress,
+void dwt(MyVector & L, int levelsToCompress,
          double * deviceInputSignal, int signalLength,
          double * deviceLowFilter, 
          double * deviceHighFilter,
