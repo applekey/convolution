@@ -14,8 +14,6 @@
 /*#define SIGNAL_LENGTH  32 */
 #define COMPRESSION_LEVELS 3
 
-typedef long long int64;
-
 using namespace std;
 
 //signal
@@ -51,12 +49,12 @@ waveletFilter filter;
 
 void initSignal() {
 
-    long long num_bytes = SIGNAL_LENGTH * sizeof(double);
+    int64 num_bytes = SIGNAL_LENGTH * sizeof(double);
     assert(num_bytes != 0);
 
     host_signal_array = (double*)malloc(num_bytes);
 
-    for(int i = 0; i < SIGNAL_LENGTH; i++) {
+    for(int64 i = 0; i < SIGNAL_LENGTH; i++) {
         /*host_signal_array[i] = 1.0 * sin((double)i /100.0) * 100.0;*/
         host_signal_array[i] = 1.0;
     }
@@ -64,7 +62,7 @@ void initSignal() {
 
 void copyInputSignal() {
 
-    long long num_bytes = SIGNAL_LENGTH * sizeof(double);
+    int64 num_bytes = SIGNAL_LENGTH * sizeof(double);
     cudaError_t err = cudaMalloc((void**)&device_signal_array, num_bytes);
 
     if(err != cudaSuccess){
@@ -74,7 +72,7 @@ void copyInputSignal() {
 }
 
 void initReconstructedSignal() {
-    long long num_bytes = SIGNAL_LENGTH * sizeof(double);
+    int64 num_bytes = SIGNAL_LENGTH * sizeof(double);
     cudaError_t err = cudaMalloc((void**)&device_reconstruted_output_array, num_bytes);
 
     if(err != cudaSuccess){
@@ -82,8 +80,8 @@ void initReconstructedSignal() {
     }
 }
 
-void initOutput(int outputLength) {
-    long long num_bytes = outputLength * sizeof(double);
+void initOutput(int64 outputLength) {
+    int64 num_bytes = outputLength * sizeof(double);
     assert(num_bytes != 0);
     cudaError_t err = cudaMalloc((void**)&device_output_array, num_bytes);
     if(err != cudaSuccess){
@@ -92,8 +90,8 @@ void initOutput(int outputLength) {
 }
 
 void initLowFilter() {
-    int lowFilterLenght = 9;
-    long long num_bytes = lowFilterLenght * sizeof(double);
+    int64 lowFilterLenght = 9;
+    int64 num_bytes = lowFilterLenght * sizeof(double);
 
     host_low_filter_array = (double*)malloc(num_bytes);
 
@@ -105,8 +103,8 @@ void initLowFilter() {
 }
 
 void initHighFilter() {
-    int highFilterLenght = 9;
-    long long num_bytes = highFilterLenght * sizeof(double);
+    int64 highFilterLenght = 9;
+    int64 num_bytes = highFilterLenght * sizeof(double);
 
     host_high_filter_array = (double*)malloc(num_bytes);
 
@@ -117,8 +115,8 @@ void initHighFilter() {
 }
 
 void initLowReconstructFilter() {
-    int lowFilterLenght = 9;
-    long long num_bytes = lowFilterLenght * sizeof(double);
+    int64 lowFilterLenght = 9;
+    int64 num_bytes = lowFilterLenght * sizeof(double);
 
     host_low_reconstruct_filter_array = (double*)malloc(num_bytes);
 
@@ -129,8 +127,8 @@ void initLowReconstructFilter() {
 }
 
 void initHighReconstructFilter() {
-    int highFilterLenght = 9;
-    long long num_bytes = highFilterLenght * sizeof(double);
+    int64 highFilterLenght = 9;
+    int64 num_bytes = highFilterLenght * sizeof(double);
 
     host_high_reconstruct_filter_array = (double*)malloc(num_bytes);
 
@@ -140,9 +138,9 @@ void initHighReconstructFilter() {
     cudaMemcpy(device_high_reconstruct_filter_array, host_high_reconstruct_filter_array, num_bytes, cudaMemcpyHostToDevice);
 }
 
-void transferMemoryBack(int outputLength) {
+void transferMemoryBack(int64 outputLength) {
     outputLength -=SIGNAL_LENGTH / 2; 
-    long long num_bytes = outputLength * sizeof(double);
+    int64 num_bytes = outputLength * sizeof(double);
     assert(num_bytes != 0);
 
     host_output_array = (double*)malloc(num_bytes);
@@ -150,8 +148,8 @@ void transferMemoryBack(int outputLength) {
     /*cudaMemcpy(host_output_array, device_output_array, num_bytes, cudaMemcpyDeviceToHost);  */
 }
 
-void transferReconstructedMemoryBack(int outputLength) {
-    long long num_bytes = outputLength * sizeof(double);
+void transferReconstructedMemoryBack(int64 outputLength) {
+    int64 num_bytes = outputLength * sizeof(double);
     assert(num_bytes != 0);
 
     host_reconstruct_output_array = (double*)malloc(num_bytes);
@@ -160,7 +158,7 @@ void transferReconstructedMemoryBack(int outputLength) {
 }
 
 void printOutputCoefficients(double * hostOutput, MyVector & coefficientIndicies) {
-    int offset = 0;
+    int64 offset = 0;
     /*int offset = SIGNAL_LENGTH / 2;*/
     int coefficientLevels = coefficientIndicies.size();
 
@@ -172,10 +170,10 @@ void printOutputCoefficients(double * hostOutput, MyVector & coefficientIndicies
     
     for(int i = 0; i < coefficientLevels - 1;i++) {
         std::cerr<<"Level: "<<i<<std::endl;
-        int levelCoefficientIndex = coefficientIndicies[i];
-        int numberOfCoefficents = coefficientIndicies[i + 1] - coefficientIndicies[i];
+        int64 levelCoefficientIndex = coefficientIndicies[i];
+        int64 numberOfCoefficents = coefficientIndicies[i + 1] - coefficientIndicies[i];
 
-        for(int j = 0; j < numberOfCoefficents; j++) {
+        for(int64 j = 0; j < numberOfCoefficents; j++) {
             double coeffVal = hostOutput[levelCoefficientIndex + j + offset];
             std::cerr<<coeffVal<<" ";
         }
@@ -185,7 +183,7 @@ void printOutputCoefficients(double * hostOutput, MyVector & coefficientIndicies
 
 void printReconstructedSignal() {
     std::cerr<<"Reconstructed Signal"<<std::endl;
-    for(int i = 0 ; i< SIGNAL_LENGTH; i++) {
+    for(int64 i = 0 ; i< SIGNAL_LENGTH; i++) {
         std::cerr<<host_reconstruct_output_array[i]<<" ";
     } 
     std::cerr<<std::endl;
@@ -200,7 +198,7 @@ bool isCloseTo(double a, double b, double epsilon) {
 void verifyReconstructedSignal() {
     bool allCorrect = true;
     std::cerr<<"Verifiying Signal"<<std::endl;
-    for(int i = 0 ; i< SIGNAL_LENGTH; i++) {
+    for(int64 i = 0 ; i< SIGNAL_LENGTH; i++) {
         if(!isCloseTo(host_reconstruct_output_array[i],1, 0.0001)) {
          std::cerr<<host_reconstruct_output_array[i]<<std::endl;
           allCorrect = false;  
@@ -229,7 +227,7 @@ void freeMemory() {
     cudaFree(device_high_reconstruct_filter_array);
 }
 
-void writeResultsToMemory(double * output, int length) {
+void writeResultsToMemory(double * output, int64 length) {
     /*double epsilon = 0.0000001;*/
     /*double a = -1.41442e-12;*/
     /*double b = 1.41421;*/
@@ -246,11 +244,11 @@ void writeResultsToMemory(double * output, int length) {
         /*}*/
     /*}*/
     /*return;*/
-    int offset = SIGNAL_LENGTH / 2;
+    int64 offset = SIGNAL_LENGTH / 2;
     ofstream myfile;
     myfile.open("output.txt");
     
-    for(int i = 0; i < length; i++) {
+    for(int64 i = 0; i < length; i++) {
         myfile << output[i + offset]<<"\n";
     }
     myfile.close();
@@ -260,7 +258,7 @@ void writeResultsToMemory(double * output, int length) {
 int main(int argc, const char * argv[]) {
     MyVector coefficientIndicies;
 
-    int outputLength = calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, SIGNAL_LENGTH);
+    int64 outputLength = calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, SIGNAL_LENGTH);
     outputLength += SIGNAL_LENGTH / 2; //add extra for buffer for first low coefficient
 
     filter.constructFilters();

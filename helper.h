@@ -7,14 +7,14 @@
 
 typedef long long int64;
 struct MyVector {
-    int currentSize = 0;
+    int64 currentSize = 0;
     int64 indicies[1000];
 
     int64 & operator[](int idx) { 
         return indicies[idx]; 
     }
 
-    void resize(int newSize) {
+    void resize(int64 newSize) {
         currentSize = newSize;  
     }
 
@@ -24,10 +24,10 @@ struct MyVector {
 };
 
 int calculateCoefficientLength(MyVector &L, int levels,
-                                int inputSignalLength) {
+                                int64 inputSignalLength) {
 
-    int totalLength = 0;
-    int currentCoefficientLength = inputSignalLength / 2; //assume that all signals are powers of 2
+    int64 totalLength = 0;
+    int64 currentCoefficientLength = inputSignalLength / 2; //assume that all signals are powers of 2
     L.resize(levels + 2); //+ 2 levels, 1 is the final low coefficients and the last as an end bookeeping
     L[0] = 0;
 
@@ -43,25 +43,25 @@ int calculateCoefficientLength(MyVector &L, int levels,
     return totalLength;
 }
 
-__global__ void convolveWavelet(double * filter, int filterLength, 
-                                double * inputSignal, int signalLength,
-                                double * output, int outputOffset) {
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
-    int inputIndex = index * 2 + (filterLength / 2); 
+__global__ void convolveWavelet(double * filter, int64 filterLength, 
+                                double * inputSignal, int64 signalLength,
+                                double * output, int64 outputOffset) {
+    int64 index = blockIdx.x * blockDim.x + threadIdx.x;
+    int64 inputIndex = index * 2 + (filterLength / 2); 
 
     double sum = 0.0;
 
-    for(int i = 0; i < filterLength; i++) {
+    for(int64 i = 0; i < filterLength; i++) {
         sum += filter[i] * inputSignal[inputIndex - (filterLength / 2) + i];
     }
 
     output[index + outputOffset] = sum; 
 }
 
-__global__ void extend(double * inputSignal, int signalLength, int filterLength,
+__global__ void extend(double * inputSignal, int64 signalLength, int64 filterLength,
                        double * extendedSignal) {
 
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    int64 index = blockIdx.x * blockDim.x + threadIdx.x;
 
     int sideWidth = filterLength / 2;
 
@@ -85,17 +85,17 @@ __global__ void extend(double * inputSignal, int signalLength, int filterLength,
 }
 
 __global__ void inverseConvolve(double * lowReconstructFilter, double * highReconstructFilter,
-                                int filterLength, 
+                                int64 filterLength, 
                                 double * lowCoefficients, double * highCoefficients,
                                 double * reconstructedSignal,
-                                int signalLength) {
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
+                                int64 signalLength) {
+    int64 index = blockIdx.x * blockDim.x + threadIdx.x;
     if(index >= signalLength) {
         return;
     }
 
     double sum = 0.0;
-    int lowIndex, highIndex;
+    int64 lowIndex, highIndex;
 
     //if( index % 2 != 0) {
         //lowIndex = filterLength - 2; 
@@ -108,7 +108,7 @@ __global__ void inverseConvolve(double * lowReconstructFilter, double * highReco
     lowIndex = filterLength - 1; 
     highIndex = filterLength - 2;
     //sum low
-    int lowCoefficientIndex = (index + 1) / 2;
+    int64 lowCoefficientIndex = (index + 1) / 2;
     while(lowIndex > -1) {
         sum += lowReconstructFilter[lowIndex] * lowCoefficients[lowCoefficientIndex]; 
         lowIndex -= 2;
@@ -116,7 +116,7 @@ __global__ void inverseConvolve(double * lowReconstructFilter, double * highReco
     }
 
     //sum high
-    int highCoefficientIndex = (index) / 2;
+    int64 highCoefficientIndex = (index) / 2;
     while(highIndex > -1) {
         sum += highReconstructFilter[highIndex] * highCoefficients[highCoefficientIndex]; 
         highIndex -= 2;
@@ -126,15 +126,15 @@ __global__ void inverseConvolve(double * lowReconstructFilter, double * highReco
     reconstructedSignal[index] = sum;
 }
 
-double * initTmpCoefficientMemory(int signalLength) {
+double * initTmpCoefficientMemory(int64 signalLength) {
     double * lowCoefficientMemory = 0; 
-    long long num_bytes = signalLength * sizeof(double);
+    int64 num_bytes = signalLength * sizeof(double);
     assert(num_bytes != 0);
     cudaMalloc((void**)&lowCoefficientMemory, num_bytes);
     return lowCoefficientMemory;
 }
 
-void calculateBlockSize(int totalLength, 
+void calculateBlockSize(int64 totalLength, 
                         int & x, int & y) {
     
     if(totalLength > MAX_X) {
@@ -152,14 +152,14 @@ void calculateBlockSize(int totalLength,
     //std::cerr<<"given "<<totalLength<<" dims are:"<<x<<":"<<y<<std::endl;
 }
 
-void debugTmpMemory(double * deviceMem, int length) {
+void debugTmpMemory(double * deviceMem, int64 length) {
     std::cerr<<"Debugging Tmp memory"<<std::endl;
-    long long num_bytes = length * sizeof(double);
+    int64 num_bytes = length * sizeof(double);
 
     double * tmp = (double*)malloc(num_bytes);
     cudaMemcpy(tmp, deviceMem, num_bytes, cudaMemcpyDeviceToHost);  
 
-    for(int i = 0; i< length; i++) {
+    for(int64 i = 0; i< length; i++) {
         std::cerr<<tmp[i]<<std::endl;
     } 
     delete [] tmp;
@@ -167,13 +167,13 @@ void debugTmpMemory(double * deviceMem, int length) {
 }
 
 void iDwt(MyVector & L, int levelsToReconstruct, 
-          int signalLength, int filterLength, 
+          int64 signalLength, int64 filterLength, 
           double * coefficients,
           double * deviceLowReconstructFilter,
           double * deviceHighReconstructFilter,
           double * reconstructedSignal) {
 
-    int maxExtendedSignalLength = signalLength;
+    int64 maxExtendedSignalLength = signalLength;
 
     double * extendedHighCoeff = initTmpCoefficientMemory(maxExtendedSignalLength);
     double * extendedLowCoeff = initTmpCoefficientMemory(maxExtendedSignalLength);
@@ -183,18 +183,18 @@ void iDwt(MyVector & L, int levelsToReconstruct,
     double * currentHighCoefficients;
 
     for(int i = 0; i < levelsToReconstruct; i++) {
-        int currentSignalLength = L[currentCoefficientIndex + 1] - L[currentCoefficientIndex];
+        int64 currentSignalLength = L[currentCoefficientIndex + 1] - L[currentCoefficientIndex];
 
-        int currentExtendedCoefficientLenght = 
+        int64 currentExtendedCoefficientLenght = 
                     currentSignalLength + (filterLength / 2) * 2;
 
         int blocks, threads;
         calculateBlockSize(currentExtendedCoefficientLenght, threads, blocks);
         
-        int coefficientOffsetLow = L[currentCoefficientIndex];
+        int64 coefficientOffsetLow = L[currentCoefficientIndex];
 
         if(i == 0) {
-            int coefficientOffsetHigh = L[currentCoefficientIndex + 1];
+            int64 coefficientOffsetHigh = L[currentCoefficientIndex + 1];
             currentHighCoefficients = coefficients + coefficientOffsetHigh; 
         }
 
@@ -221,17 +221,17 @@ void iDwt(MyVector & L, int levelsToReconstruct,
 }
 
 void dwt(MyVector & L, int levelsToCompress,
-         double * deviceInputSignal, int signalLength,
+         double * deviceInputSignal, int64 signalLength,
          double * deviceLowFilter, 
          double * deviceHighFilter,
          double * deviceOutputCoefficients,
-         int filterLength) {
+         int64 filterLength) {
 
-    int currentSignalLength = signalLength;
-    int currentHighCoefficientOffset = 0 + signalLength / 2; 
+    int64 currentSignalLength = signalLength;
+    int64 currentHighCoefficientOffset = 0 + signalLength / 2; 
     //create a tempory low coefficient / signal extend array
      
-    int inputSignalExtendedLength = currentSignalLength + (filterLength / 2 ) * 2;
+    int64 inputSignalExtendedLength = currentSignalLength + (filterLength / 2 ) * 2;
 
     double * deviceLowCoefficientMemory = initTmpCoefficientMemory(inputSignalExtendedLength);
     double * currentDeviceSignal = deviceInputSignal;
@@ -239,7 +239,7 @@ void dwt(MyVector & L, int levelsToCompress,
     for(int level = 0; level < levelsToCompress; level++) {
 
         //extend the signal
-        int inputSignalExtendedLength = currentSignalLength + (filterLength / 2 ) * 2;
+        int64 inputSignalExtendedLength = currentSignalLength + (filterLength / 2 ) * 2;
 
         int xThread = -1;
         int yThread = -1;
@@ -250,9 +250,9 @@ void dwt(MyVector & L, int levelsToCompress,
 
         //debugTmpMemory(deviceLowCoefficientMemory, inputSignalExtendedLength);
         ////convolve low filters
-        int block_size = currentSignalLength / 2;
+        int64 block_size = currentSignalLength / 2;
 
-        int lowCoeffOffset = 0;
+        int64 lowCoeffOffset = 0;
         if(level == levelsToCompress - 1) {
             lowCoeffOffset = L[level + 1] + signalLength / 2;
         }
