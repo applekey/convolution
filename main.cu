@@ -7,12 +7,14 @@
 #include <chrono>
 #include <cassert>
 
-/*#define SIGNAL_LENGTH 134217728 */
+#define SIGNAL_LENGTH 134217728 
 /*#define SIGNAL_LENGTH 67108864 */
+/*#define SIGNAL_LENGTH 33554432*/
+/*#define SIGNAL_LENGTH 16777216 */
 /*#define SIGNAL_LENGTH 1048576 */
-#define SIGNAL_LENGTH 524288 
+/*#define SIGNAL_LENGTH 524288 */
 /*#define SIGNAL_LENGTH  32 */
-#define COMPRESSION_LEVELS 3
+#define COMPRESSION_LEVELS 10
 
 using namespace std;
 
@@ -200,11 +202,13 @@ void verifyReconstructedSignal() {
     std::cerr<<"Verifiying Signal"<<std::endl;
     for(int64 i = 0 ; i< SIGNAL_LENGTH; i++) {
         if(!isCloseTo(host_reconstruct_output_array[i],1, 0.0001)) {
-         std::cerr<<host_reconstruct_output_array[i]<<std::endl;
+         
+         /*std::cerr<<host_reconstruct_output_array[i]<<std::endl;*/
           allCorrect = false;  
+            std::cerr<<i<<std::endl;
+            assert(allCorrect);
         }
     } 
-    assert(allCorrect);
 }
 
 void freeMemory() {
