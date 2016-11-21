@@ -8,7 +8,7 @@
 #include <chrono>
 #include <cassert>
 
-#define SIGNAL_LENGTH 134217728 
+#define SIGNAL_LENGTH 134217728
 /*#define SIGNAL_LENGTH 67108864 */
 /*#define SIGNAL_LENGTH 33554432*/
 /*#define SIGNAL_LENGTH 16777216 */
@@ -68,8 +68,8 @@ void copyInputSignal() {
     int64 num_bytes = SIGNAL_LENGTH * sizeof(double);
     cudaError_t err = cudaMalloc((void**)&device_signal_array, num_bytes);
 
-    if(err != cudaSuccess){
-         printf("The error is %s", cudaGetErrorString(err));
+    if(err != cudaSuccess) {
+        printf("The error is %s", cudaGetErrorString(err));
     }
     cudaMemcpy(device_signal_array, host_signal_array, num_bytes, cudaMemcpyHostToDevice);
 }
@@ -78,8 +78,8 @@ void initReconstructedSignal() {
     int64 num_bytes = SIGNAL_LENGTH * sizeof(double);
     cudaError_t err = cudaMalloc((void**)&device_reconstruted_output_array, num_bytes);
 
-    if(err != cudaSuccess){
-         printf("The error is %s", cudaGetErrorString(err));
+    if(err != cudaSuccess) {
+        printf("The error is %s", cudaGetErrorString(err));
     }
 }
 
@@ -87,8 +87,8 @@ void initOutput(int64 outputLength) {
     int64 num_bytes = outputLength * sizeof(double);
     assert(num_bytes != 0);
     cudaError_t err = cudaMalloc((void**)&device_output_array, num_bytes);
-    if(err != cudaSuccess){
-         printf("The error is %s", cudaGetErrorString(err));
+    if(err != cudaSuccess) {
+        printf("The error is %s", cudaGetErrorString(err));
     }
 }
 
@@ -142,12 +142,12 @@ void initHighReconstructFilter() {
 }
 
 void transferMemoryBack(int64 outputLength) {
-    outputLength -=SIGNAL_LENGTH / 2; 
+    outputLength -=SIGNAL_LENGTH / 2;
     int64 num_bytes = outputLength * sizeof(double);
     assert(num_bytes != 0);
 
     host_output_array = (double*)malloc(num_bytes);
-    cudaMemcpy(host_output_array, device_output_array + SIGNAL_LENGTH / 2, num_bytes, cudaMemcpyDeviceToHost);  
+    cudaMemcpy(host_output_array, device_output_array + SIGNAL_LENGTH / 2, num_bytes, cudaMemcpyDeviceToHost);
     /*cudaMemcpy(host_output_array, device_output_array, num_bytes, cudaMemcpyDeviceToHost);  */
 }
 
@@ -156,8 +156,8 @@ void transferReconstructedMemoryBack(int64 outputLength) {
     assert(num_bytes != 0);
 
     host_reconstruct_output_array = (double*)malloc(num_bytes);
-    cudaMemcpy(host_reconstruct_output_array, device_reconstruted_output_array, 
-               num_bytes, cudaMemcpyDeviceToHost);  
+    cudaMemcpy(host_reconstruct_output_array, device_reconstruted_output_array,
+               num_bytes, cudaMemcpyDeviceToHost);
 }
 
 void printOutputCoefficients(double * hostOutput, MyVector & coefficientIndicies) {
@@ -168,10 +168,10 @@ void printOutputCoefficients(double * hostOutput, MyVector & coefficientIndicies
     /*int total = coefficientIndicies[3];*/
     /*std::cerr<<coefficientLevels<<" "<<total<<std::endl;*/
     /*for(int i =0; i< total; i++) {*/
-        /*std::cerr<<hostOutput[offset + i]<<std::endl;*/
+    /*std::cerr<<hostOutput[offset + i]<<std::endl;*/
     /*}*/
-    
-    for(int i = 0; i < coefficientLevels - 1;i++) {
+
+    for(int i = 0; i < coefficientLevels - 1; i++) {
         std::cerr<<"Level: "<<i<<std::endl;
         int64 levelCoefficientIndex = coefficientIndicies[i];
         int64 numberOfCoefficents = coefficientIndicies[i + 1] - coefficientIndicies[i];
@@ -188,7 +188,7 @@ void printReconstructedSignal() {
     std::cerr<<"Reconstructed Signal"<<std::endl;
     for(int64 i = 0 ; i< SIGNAL_LENGTH; i++) {
         std::cerr<<host_reconstruct_output_array[i]<<" ";
-    } 
+    }
     std::cerr<<std::endl;
 }
 bool isCloseTo(double a, double b, double epsilon) {
@@ -203,13 +203,13 @@ void verifyReconstructedSignal() {
     std::cerr<<"Verifiying Signal"<<std::endl;
     for(int64 i = 0 ; i< SIGNAL_LENGTH; i++) {
         if(!isCloseTo(host_reconstruct_output_array[i],1, 0.0001)) {
-         
-         /*std::cerr<<host_reconstruct_output_array[i]<<std::endl;*/
-          allCorrect = false;  
+
+            /*std::cerr<<host_reconstruct_output_array[i]<<std::endl;*/
+            allCorrect = false;
             std::cerr<<i<<std::endl;
             assert(allCorrect);
         }
-    } 
+    }
 }
 
 void freeMemory() {
@@ -239,20 +239,20 @@ void writeResultsToMemory(double * output, int64 length) {
 
     /*int offset = SIGNAL_LENGTH / 2;*/
     /*for(int i = 0; i < length/2; i++) {*/
-        /*if(abs(a -  output[i + offset]) < epsilon * 1.0e-12 ) {*/
-            /*std::cerr<<"error "<<output[i + offset]<<std::endl;*/
-        /*}*/
+    /*if(abs(a -  output[i + offset]) < epsilon * 1.0e-12 ) {*/
+    /*std::cerr<<"error "<<output[i + offset]<<std::endl;*/
+    /*}*/
     /*}*/
     /*for(int i = length/2; i < length; i++) {*/
-        /*if(abs(b -  output[i + offset]) < epsilon) {*/
-            /*std::cerr<<"error "<<output[i + offset]<<std::endl;*/
-        /*}*/
+    /*if(abs(b -  output[i + offset]) < epsilon) {*/
+    /*std::cerr<<"error "<<output[i + offset]<<std::endl;*/
+    /*}*/
     /*}*/
     /*return;*/
     int64 offset = SIGNAL_LENGTH / 2;
     ofstream myfile;
     myfile.open("output.txt");
-    
+
     for(int64 i = 0; i < length; i++) {
         myfile << output[i + offset]<<"\n";
     }
@@ -275,11 +275,11 @@ int main(int argc, const char * argv[]) {
     initOutput(outputLength);
     initReconstructedSignal();
 
-/*-------------------COMPRESS THE SIGNAL---------------------*/
-auto startDecompose = std::chrono::system_clock::now();
+    /*-------------------COMPRESS THE SIGNAL---------------------*/
+    auto startDecompose = std::chrono::system_clock::now();
     copyInputSignal();
-    //run filter   
-    dwt(coefficientIndicies, COMPRESSION_LEVELS, 
+    //run filter
+    dwt(coefficientIndicies, COMPRESSION_LEVELS,
         device_signal_array, SIGNAL_LENGTH,
         device_low_filter_array, device_high_filter_array,
         device_output_array, 9);
@@ -287,45 +287,45 @@ auto startDecompose = std::chrono::system_clock::now();
     //transfer output back
     transferMemoryBack(outputLength);
 
-auto endDecompose = std::chrono::system_clock::now();
-std::chrono::duration<double> diff = endDecompose-startDecompose;
-std::cout<< diff.count() << " s\n";
+    auto endDecompose = std::chrono::system_clock::now();
+    std::chrono::duration<double> diff = endDecompose-startDecompose;
+    std::cout<< diff.count() << " s\n";
     /*printOutputCoefficients(host_output_array, coefficientIndicies);*/
 
     /*int ab = calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, SIGNAL_LENGTH);*/
     /*writeResultsToMemory(host_output_array, ab);*/
 
-/*-------------------DEBUG---------------------*/
-/*std::cerr<<"low"<<std::endl;*/
-/*for(int i = 0;i < 9; i++ ) {*/
+    /*-------------------DEBUG---------------------*/
+    /*std::cerr<<"low"<<std::endl;*/
+    /*for(int i = 0;i < 9; i++ ) {*/
     /*std::cerr<<host_low_reconstruct_filter_array[i]<<std::endl;*/
-/*}*/
+    /*}*/
 
-/*std::cerr<<"break"<<std::endl;*/
+    /*std::cerr<<"break"<<std::endl;*/
 
-/*std::cerr<<"high"<<std::endl;*/
-/*for(int i = 0;i < 9; i++ ) {*/
+    /*std::cerr<<"high"<<std::endl;*/
+    /*for(int i = 0;i < 9; i++ ) {*/
     /*std::cerr<<host_high_reconstruct_filter_array[i]<<std::endl;*/
-/*}*/
+    /*}*/
 
-/*-------------------UN-COMPRESS THE SIGNAL---------------------*/
-auto startReconstruct = std::chrono::system_clock::now();
-    iDwt(coefficientIndicies, COMPRESSION_LEVELS, 
+    /*-------------------UN-COMPRESS THE SIGNAL---------------------*/
+    auto startReconstruct = std::chrono::system_clock::now();
+    iDwt(coefficientIndicies, COMPRESSION_LEVELS,
          SIGNAL_LENGTH, 9, device_output_array + SIGNAL_LENGTH / 2,
          device_low_reconstruct_filter_array,
          device_high_reconstruct_filter_array,
          device_reconstruted_output_array);
 
     transferReconstructedMemoryBack(SIGNAL_LENGTH);
-auto endReconstruct = std::chrono::system_clock::now();
-diff = endReconstruct-startReconstruct;
-std::cout<< diff.count() << " s\n";
+    auto endReconstruct = std::chrono::system_clock::now();
+    diff = endReconstruct-startReconstruct;
+    std::cout<< diff.count() << " s\n";
     /*printReconstructedSignal();*/
     verifyReconstructedSignal();
     /*printReconstructedSignal();*/
 
-/*-------------------CLEAN-UP---------------------*/
-    //done free memory 
+    /*-------------------CLEAN-UP---------------------*/
+    //done free memory
     freeMemory();
 
     return 0;

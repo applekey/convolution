@@ -4,7 +4,7 @@ private:
     int filterLength = 9;
     double * lowPassFilter;
     double * highPassFilter;
-    
+
     double * lowReconstructFilter;
     double * highReconstructFilter;
 
