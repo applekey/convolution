@@ -1,5 +1,6 @@
 #include "waveletFilter.h"
 #include "helper.h"
+#include "helper2D.h"
 #include <stdio.h>
 #include <vector>
 #include <fstream>

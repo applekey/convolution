@@ -1,3 +1,6 @@
+#ifndef HELPER_H
+#define HELPER_H
+
 #define SIGNAL_PAD_VALUE 1.0
 #include <iostream>
 #include <vector>
@@ -305,3 +308,4 @@ void dwt(MyVector & L, int levelsToCompress,
     //free tmp memory
     cudaFree(deviceLowCoefficientMemory);
 }
+#endif
