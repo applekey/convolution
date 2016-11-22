@@ -7,7 +7,12 @@
 #include <iostream>
 #include <chrono>
 #include <cassert>
+#include "test2D.h"
 
+/*--------------------------------------*/
+// All the code below is to test 1D signal,
+// the code to test 2D is in test2D.h
+/*--------------------------------------*/
 #define SIGNAL_LENGTH 134217728
 /*#define SIGNAL_LENGTH 67108864 */
 /*#define SIGNAL_LENGTH 33554432*/
@@ -48,7 +53,6 @@ double * host_reconstruct_output_array = 0;
 double * device_reconstruted_output_array = 0;
 
 waveletFilter filter;
-
 
 void initSignal() {
 
@@ -259,8 +263,7 @@ void writeResultsToMemory(double * output, int64 length) {
     myfile.close();
 }
 
-
-int main(int argc, const char * argv[]) {
+void test1D() {
     MyVector coefficientIndicies;
 
     int64 outputLength = calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, SIGNAL_LENGTH);
@@ -327,6 +330,9 @@ int main(int argc, const char * argv[]) {
     /*-------------------CLEAN-UP---------------------*/
     //done free memory
     freeMemory();
+}
 
+int main(int argc, const char * argv[]) {
+    test1D();
     return 0;
 }
