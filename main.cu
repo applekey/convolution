@@ -263,6 +263,7 @@ void writeResultsToMemory(double * output, int64 length) {
 }
 
 void test1D() {
+    std::cerr<<"Testing 1D Decompose"<<std::endl;
     MyVector coefficientIndicies;
 
     int64 outputLength = calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, SIGNAL_LENGTH);

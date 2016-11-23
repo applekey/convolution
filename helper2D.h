@@ -118,6 +118,7 @@ void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
     int blockWidth = inputImageMeta.imageWidth; 
     int blockHeight = inputImageMeta.imageHeight; 
     int64 extendedImageSize = calculateExtendedSignalLength(blockWidth, blockHeight, filterLength);
+
     double * deviceTmpMemory = initTmpCoefficientMemory(extendedImageSize);
         
     //calculate extended Image Meta
@@ -125,13 +126,12 @@ void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
     extendedImageMeta.xStart -= filterLength / 2;
     extendedImageMeta.xEnd += filterLength / 2;
 
-__global__ void extend2D_Horizontal(struct ImageMeta extendedInputSize, double * inputSignal,
-                            double * extendedSignal, int64 filterSize) {
     //extend the image
     int threads;
     dim3 blocks;
     calculateBlockSize(extendedImageSize, threads, blocks);
-    extend2D_Horizontal<<<blocks, threads>>>();
+    extend2D_Horizontal<<<blocks, threads>>>(extendedImageMeta, deviceInputSignal, 
+                                             deviceTmpMemory, filterLength);
 
     //initlize output memory
     //int extendedMemorySize = blockWidth * blockHeight;

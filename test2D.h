@@ -1,6 +1,6 @@
 #include "waveletFilter.h"
 
-#define SIGNAL_LENGTH_2D 1024 
+#define SIGNAL_LENGTH_2D 4 
 #define COMPRESSION_LEVELS_2D 10
 
 #include "helper2D.h"
@@ -87,10 +87,33 @@ void initOutput_2D() {
     }
 }
 
-
 void test2D() {
+    std::cerr<<"Testing 2D Decompose"<<std::endl;
     filter2D.constructFilters();
     initLowFilter_2D();
     initHighFilter_2D();
     initOutput_2D();
+    //decompose the signal 
+    MyVector levels;
+
+    struct ImageMeta imageMeta;
+    imageMeta.imageWidth = SIGNAL_LENGTH_2D;
+    imageMeta.imageHeight = SIGNAL_LENGTH_2D;
+    imageMeta.xStart = 0;
+    imageMeta.yStart = 0;
+    imageMeta.xEnd = SIGNAL_LENGTH_2D;
+    imageMeta.yEnd = SIGNAL_LENGTH_2D;
+
+    dwt2D_Horizontal(levels, COMPRESSION_LEVELS_2D, device_signal_array_2D,
+                    imageMeta, device_low_filter_array_2D,
+                    device_high_filter_array_2D, 9,
+                        
+//void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
+                      //double * deviceInputSignal, 
+                      //struct ImageMeta &  inputImageMeta,
+                      //double * deviceLowFilter,
+                      //double * deviceHighFilter,
+                      //int64 filterLength,
+                      //struct ImageMeta & outputImageMeta,
+                      //double * deviceOutputCoefficients) {
 }
