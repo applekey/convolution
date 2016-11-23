@@ -9,50 +9,6 @@ struct vec2 {
     int64 x, y;
 };
 
-//struct vec2 get2DIndex() {
-    //int x = -1;
-    //int y = -1;
-    //return vec2(x, y); 
-//}
-
-////extend the signal
-//__void__ int64 calculateIndex() {
-//}
-//__device__ void convolve2DHorizontal() {
-    //struct vec2 index = get2DIndex();
-
-    //int64 inputIndex = index * 2 + (filterLength / 2);
-
-    //double sum = 0.0;
-
-    //for(int64 i = 0; i < filterLength; i++) {
-        //sum += filter[i] * inputSignal[inputIndex - (filterLength / 2) + i];
-    //}
-
-    //output[index + outputOffset] = sum;
-//}
-
-
-
-//int calcualteNewIndex() {
-    //if i > bounds modulo thing
-    //then nxt line i guess
-    //else
-    //index offset ++ 
-//}
-
-//calculateOutputIndexHorizontal() {
-    //offset = half of the image
-   //horizontal index / w2 
-    //verticle index the same
-    //calcualteNewIndex
-//}
-
-//calculateOutputIndexVerticle() {
-    
-
-//}
-
 struct ImageMeta {
     int64 imageWidth, imageHeight;
     int64 xStart, xEnd;
@@ -68,8 +24,9 @@ __device__ int64 translateToRealIndex(struct ImageMeta inputSize, int64 index) {
     return y * realStride + inputSize.xStart + x;
 }
 
-__global__ void extend2D_Horizontal(struct ImageMeta extendedInputSize, double * inputSignal,
-                            double * extendedSignal, int64 filterSize) {
+__global__ void extend2D_Horizontal(struct ImageMeta origionalImageSize,
+                                    struct ImageMeta extendedInputSize, double * inputSignal,
+                                    double * extendedSignal, int64 filterSize) {
     int64 index = calculateIndex();
     int64 totalBlockSize = extendedInputSize.imageWidth * extendedInputSize.imageHeight;
 
@@ -77,18 +34,18 @@ __global__ void extend2D_Horizontal(struct ImageMeta extendedInputSize, double *
         return;
     }
 
-    int64 realStride = extendedInputSize.imageWidth;
+    int64 realStride = origionalImageSize.imageWidth;
     int64 sideWidth = filterSize / 2;
 
     int64 inputStride = extendedInputSize.xEnd - extendedInputSize.xStart;
     int64 yIndex = index / inputStride;
     int64 xIndex = index % inputStride;
 
-    if(xIndex < sideWidth) {
+    if(xIndex <= sideWidth) {
 
         extendedSignal[index] = 0;
 
-    } else if(index >= sideWidth && index < inputStride - sideWidth) {
+    } else if(xIndex >= sideWidth && xIndex <= inputStride - sideWidth) {
 
         int64 inputIndex = (extendedInputSize.yStart + yIndex) * realStride + (xIndex - sideWidth) + extendedInputSize.xStart;
         extendedSignal[index] = inputSignal[inputIndex];
@@ -102,8 +59,7 @@ __global__ void extend2D_Horizontal(struct ImageMeta extendedInputSize, double *
 int64 calculateExtendedSignalLength(int64 width, int64 height, int64 filterSize) {
     int64 filterSideSize = filterSize / 2;
     int64 extendedWidth = width + filterSideSize * 2;
-    int64 extendedHeight = height + filterSideSize * 2;
-    return extendedWidth * extendedHeight; 
+    return extendedWidth * height; 
 }
 
 void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
@@ -123,16 +79,18 @@ void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
         
     //calculate extended Image Meta
     struct ImageMeta extendedImageMeta = inputImageMeta;
-    extendedImageMeta.xStart -= filterLength / 2;
-    extendedImageMeta.xEnd += filterLength / 2;
+    int64 extendedWidth = (filterLength / 2) * 2;
+    extendedImageMeta.xEnd += extendedWidth;
+    extendedImageMeta.imageWidth += extendedWidth;
 
     //extend the image
     int threads;
     dim3 blocks;
     calculateBlockSize(extendedImageSize, threads, blocks);
-    extend2D_Horizontal<<<blocks, threads>>>(extendedImageMeta, deviceInputSignal, 
+    extend2D_Horizontal<<<blocks, threads>>>(inputImageMeta, extendedImageMeta, deviceInputSignal, 
                                              deviceTmpMemory, filterLength);
-
+    std::cerr<<threads<<std::endl;
+    debugTmpMemory(deviceTmpMemory, extendedImageSize, extendedImageMeta.imageWidth);
     //initlize output memory
     //int extendedMemorySize = blockWidth * blockHeight;
     //double * deviceOutputMemory = initTmpCoefficientMemory(extendedMemorySize);

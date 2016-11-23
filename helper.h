@@ -179,19 +179,22 @@ void calculateBlockSize(int64 totalLength,
         blocks.y = 1;
         blocks.z = 1;
     }
-    //std::cerr<<"given "<<totalLength<<" dims are:"<<x<<":"<<y<<":"<<z<<std::endl;
 }
 
-void debugTmpMemory(double * deviceMem, int64 length) {
-    std::cerr<<"Debugging Tmp memory"<<std::endl;
+void debugTmpMemory(double * deviceMem, int64 length, int64 stride = 0) {
+    std::cerr<<"Debugging Tmp memory of size:"<<length<<std::endl;
     int64 num_bytes = length * sizeof(double);
 
     double * tmp = (double*)malloc(num_bytes);
     cudaMemcpy(tmp, deviceMem, num_bytes, cudaMemcpyDeviceToHost);
 
     for(int64 i = 0; i< length; i++) {
-        std::cerr<<tmp[i]<<std::endl;
+        if(stride > 0 && i % stride == 0) {
+            std::cerr<<std::endl;
+        }
+        std::cerr<<tmp[i]<<" ";
     }
+    std::cerr<<std::endl;
     delete [] tmp;
     std::cerr<<"Debugging Tmp memory Stop"<<std::endl;
 }

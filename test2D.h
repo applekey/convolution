@@ -93,6 +93,9 @@ void test2D() {
     initLowFilter_2D();
     initHighFilter_2D();
     initOutput_2D();
+
+    initSignal2D();
+    copyInputSignal2D();
     //decompose the signal 
     MyVector levels;
 
@@ -106,14 +109,6 @@ void test2D() {
 
     dwt2D_Horizontal(levels, COMPRESSION_LEVELS_2D, device_signal_array_2D,
                     imageMeta, device_low_filter_array_2D,
-                    device_high_filter_array_2D, 9,
-                        
-//void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
-                      //double * deviceInputSignal, 
-                      //struct ImageMeta &  inputImageMeta,
-                      //double * deviceLowFilter,
-                      //double * deviceHighFilter,
-                      //int64 filterLength,
-                      //struct ImageMeta & outputImageMeta,
-                      //double * deviceOutputCoefficients) {
+                    device_high_filter_array_2D, 9, imageMeta,
+                    device_output_array_2D);
 }
