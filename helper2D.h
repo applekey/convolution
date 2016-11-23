@@ -41,7 +41,7 @@ __global__ void extend2D_Horizontal(struct ImageMeta origionalImageSize,
     int64 yIndex = index / inputStride;
     int64 xIndex = index % inputStride;
 
-    if(xIndex <= sideWidth) {
+    if(xIndex < sideWidth) {
 
         extendedSignal[index] = 0;
 
