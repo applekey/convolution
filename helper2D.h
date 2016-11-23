@@ -47,13 +47,30 @@ __global__ void extend2D_Horizontal(struct ImageMeta origionalImageSize,
 
     } else if(xIndex >= sideWidth && xIndex <= inputStride - sideWidth) {
 
-        int64 inputIndex = (extendedInputSize.yStart + yIndex) * realStride + (xIndex - sideWidth) + extendedInputSize.xStart;
+        int64 inputIndex = (extendedInputSize.yStart + yIndex) * realStride + 
+                           (xIndex - sideWidth) + extendedInputSize.xStart;
         extendedSignal[index] = inputSignal[inputIndex];
 
     }  else {
         //extendedSignal[index] = SIGNAL_PAD_VALUE;
         extendedSignal[index] = 0;
     }
+}
+
+__global__ void convolve2D_Horizontal(double * inputSignal, int signalLength, int signalStride,
+                                       double * filter, int filterLength,
+                                       double * output, struct ImageMeta outputImageMeta) {
+    int64 index = calculateIndex();
+    int64 inputIndex = index * 2 + (filterLength / 2);
+
+    double sum = 0.0;
+
+    for(int64 i = 0; i < filterLength; i++) {
+        sum += filter[i] * inputSignal[inputIndex - (filterLength / 2) + i];
+    }
+
+    int64 outputIndex = translateToRealIndex(outputImageMeta, index);
+    output[outputIndex] = sum;
 }
 
 int64 calculateExtendedSignalLength(int64 width, int64 height, int64 filterSize) {
@@ -91,8 +108,20 @@ void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
                                              deviceTmpMemory, filterLength);
     std::cerr<<threads<<std::endl;
     debugTmpMemory(deviceTmpMemory, extendedImageSize, extendedImageMeta.imageWidth);
-    //initlize output memory
-    //int extendedMemorySize = blockWidth * blockHeight;
-    //double * deviceOutputMemory = initTmpCoefficientMemory(extendedMemorySize);
+
+    //set up output image meta
+    struct ImageMeta extendedImageMetaHigh = outputImageMeta;
+    extendedImageMetaHigh.yStart = extendedImageMetaHigh.imageHeight / 2;
+
+    struct ImageMeta extendedImageMetaLow = outputImageMeta;
+    extendedImageMetaLow.yEnd = extendedImageMetaLow.imageHeight / 2;
+    //convolve the image
+    int64 convolveImagSize = outputImageMeta.imageHeight * outputImageMeta.imageWidth / 2; 
+    calculateBlockSize(convolveImagSize, threads, blocks);
+
+    //convolve2D_Horizontal<<<blocks, threads>>> (deviceTmpMemory, convolveImagSize,  
+//__global__ void convolve2D_Horizontal(double * inputSignal, int signalLength, int signalStride,
+                                       //double * filter, int filterLength,
+                                       //double * output, struct ImageMeta outputImageMeta) {
     cudaFree(deviceTmpMemory);
 }

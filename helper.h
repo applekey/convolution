@@ -55,6 +55,9 @@ __global__ void convolveWavelet(double * filter, int64 filterLength,
                                 double * inputSignal, int64 signalLength,
                                 double * output, int64 outputOffset) {
     int64 index = calculateIndex();
+    if(index >= signalLength) {
+        return;
+    }
     int64 inputIndex = index * 2 + (filterLength / 2);
 
     double sum = 0.0;

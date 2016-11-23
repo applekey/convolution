@@ -333,7 +333,7 @@ void test1D() {
 }
 
 int main(int argc, const char * argv[]) {
-    /*test1D();*/
-    test2D();
+    test1D();
+    /*test2D();*/
     return 0;
 }
