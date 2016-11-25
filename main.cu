@@ -151,7 +151,6 @@ void transferMemoryBack(int64 outputLength) {
 
     host_output_array = (double*)malloc(num_bytes);
     cudaMemcpy(host_output_array, device_output_array + SIGNAL_LENGTH / 2, num_bytes, cudaMemcpyDeviceToHost);
-    /*cudaMemcpy(host_output_array, device_output_array, num_bytes, cudaMemcpyDeviceToHost);  */
 }
 
 void transferReconstructedMemoryBack(int64 outputLength) {
@@ -333,7 +332,7 @@ void test1D() {
 }
 
 int main(int argc, const char * argv[]) {
-    test1D();
-    /*test2D();*/
+    /*test1D();*/
+    test2D();
     return 0;
 }

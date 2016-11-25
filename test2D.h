@@ -1,6 +1,6 @@
 #include "waveletFilter.h"
 
-#define SIGNAL_LENGTH_2D 4 
+#define SIGNAL_LENGTH_2D 8
 #define COMPRESSION_LEVELS_2D 10
 
 #include "helper2D.h"
@@ -39,7 +39,7 @@ void initSignal2D() {
 
     for(int64 i = 0; i < signalLength; i++) {
         /*host_signal_array[i] = 1.0 * sin((double)i /100.0) * 100.0;*/
-        host_signal_array_2D[i] = i;
+        host_signal_array_2D[i] = 1.0;
     }
 }
 
@@ -87,6 +87,27 @@ void initOutput_2D() {
     }
 }
 
+void transferMemoryBack_2D() {
+    int64 num_bytes = get1DSignalLength() * sizeof(double);
+    assert(num_bytes != 0);
+
+    host_output_array_2D = (double*)malloc(num_bytes);
+    cudaMemcpy(host_output_array_2D, device_output_array_2D, num_bytes, cudaMemcpyDeviceToHost);
+}
+
+void printResult_2D() {
+    int64 signalLenght = get1DSignalLength();
+    int64 stride = SIGNAL_LENGTH_2D;
+    
+    for(int64 i = 0;i < signalLenght;i++) {
+        if(i % stride == 0) {
+            std::cerr<<std::endl;
+        }
+        std::cerr<<host_output_array_2D[i]<<" ";
+    }
+    std::cerr<<std::endl;
+}
+
 void test2D() {
     std::cerr<<"Testing 2D Decompose"<<std::endl;
     filter2D.constructFilters();
@@ -111,4 +132,6 @@ void test2D() {
                     imageMeta, device_low_filter_array_2D,
                     device_high_filter_array_2D, 9, imageMeta,
                     device_output_array_2D);
+    transferMemoryBack_2D();
+    printResult_2D();
 }
