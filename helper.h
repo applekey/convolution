@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <cassert>
+#include <iomanip>   
 
 #define MAX_X 1024
 #define MAX_Y 4096
@@ -195,7 +196,7 @@ void debugTmpMemory(double * deviceMem, int64 length, int64 stride = 0) {
         if(stride > 0 && i % stride == 0) {
             std::cerr<<std::endl;
         }
-        std::cerr<<tmp[i]<<" ";
+        std::cerr<< std::fixed<<std::setprecision(2)<<tmp[i]<<" ";
     }
     std::cerr<<std::endl;
     delete [] tmp;
