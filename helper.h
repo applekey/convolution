@@ -197,6 +197,7 @@ void debugTmpMemory(double * deviceMem, int64 length, int64 stride = 0) {
             std::cerr<<std::endl;
         }
         //std::cerr<< std::fixed<<std::setprecision(2)<<tmp[i]<<" ";
+        std::cerr<<std::setprecision(2);
         std::cerr<<tmp[i]<<" ";
     }
     std::cerr<<std::endl;

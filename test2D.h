@@ -1,7 +1,7 @@
 #include "waveletFilter.h"
 
 #define SIGNAL_LENGTH_2D 8
-#define COMPRESSION_LEVELS_2D 2
+#define COMPRESSION_LEVELS_2D 3
 
 #include "helper2D.h"
 
@@ -56,7 +56,7 @@ void copyInputSignal2D() {
 
 void initLowFilter_2D() {
     int64 lowFilterLenght = 9;
-    int64 num_bytes = get1DSignalLength() * sizeof(double);
+    int64 num_bytes = lowFilterLenght * sizeof(double);
 
     host_low_filter_array_2D = (double*)malloc(num_bytes);
 
@@ -69,7 +69,7 @@ void initLowFilter_2D() {
 
 void initHighFilter_2D() {
     int64 highFilterLenght = 9;
-    int64 num_bytes = get1DSignalLength() * sizeof(double);
+    int64 num_bytes = highFilterLenght * sizeof(double);
 
     host_high_filter_array_2D = (double*)malloc(num_bytes);
 

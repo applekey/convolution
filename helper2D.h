@@ -98,7 +98,6 @@ __global__ void extend2D_Vertical(struct ImageMeta origionalImageSize,
         return;
     }
     int64 realStride = origionalImageSize.imageWidth;
-    int64 vertStride = origionalImageSize.imageHeight;
 
     int64 sideWidth = filterSize / 2;
 
@@ -194,11 +193,13 @@ void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
         if(isHorizontal) {
             extend2D_Horizontal<<<blocks, threads>>>(inputImageMeta, extendedImageMeta, currentInputSignal, 
                                                      deviceTmpMemory, filterLength);
-            debugTmpMemory(deviceTmpMemory, extendedImageSize, extendedImageMeta.imageWidth);
+            int64 extendedWidth =  extendedImageMeta.xEnd - extendedImageMeta.xStart;
+            debugTmpMemory(deviceTmpMemory, extendedImageSize, extendedWidth);
         } else {
             extend2D_Vertical<<<blocks, threads>>>(inputImageMeta, extendedImageMeta, currentInputSignal, 
                                                      deviceTmpMemory, filterLength);
-            debugTmpMemory(deviceTmpMemory, extendedImageSize, extendedImageMeta.imageHeight);
+            int64 extendedHeight =  extendedImageMeta.yEnd - extendedImageMeta.yStart;
+            debugTmpMemory(deviceTmpMemory, extendedImageSize, extendedHeight);
         }
 
         //set up output image meta
