@@ -1,7 +1,7 @@
 #include "waveletFilter.h"
 
 #define SIGNAL_LENGTH_2D 8
-#define COMPRESSION_LEVELS_2D 1
+#define COMPRESSION_LEVELS_2D 2
 
 #include "helper2D.h"
 

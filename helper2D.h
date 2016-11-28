@@ -66,7 +66,7 @@ __global__ void extend2D_Horizontal(struct ImageMeta origionalImageSize,
     }  else {
         //extendedSignal[index] = SIGNAL_PAD_VALUE;
         int64 inputIndex = (extendedInputSize.yStart + yIndex) * realStride + 
-                            extendedInputSize.xStart;
+                            extendedInputSize.xStart + inputStride -1;
         extendedSignal[index] = inputSignal[inputIndex];
     }
 }
@@ -123,7 +123,7 @@ __global__ void extend2D_Vertical(struct ImageMeta origionalImageSize,
         extendedSignal[rotatedIndex] = inputSignal[inputIndex];
 
     }  else {
-        int64 inputIndex = (extendedInputSize.yStart) * realStride + 
+        int64 inputIndex = (extendedInputSize.yStart + yInputStride - 1 - sideWidth * 2) * realStride + 
                            xIndex + extendedInputSize.xStart;
         extendedSignal[rotatedIndex] = inputSignal[inputIndex];
         //extendedSignal[rotatedIndex] = 1.3;
@@ -162,6 +162,7 @@ void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
                       double * deviceOutputCoefficients) {
 
     struct ImageMeta currentImageMeta = inputImageMeta;
+    double * currentInputSignal = deviceInputSignal;
 
     //allocate output max memory size
     int blockWidth = inputImageMeta.imageWidth; 
@@ -191,11 +192,11 @@ void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
         dim3 blocks;
         calculateBlockSize(extendedImageSize, threads, blocks);
         if(isHorizontal) {
-            extend2D_Horizontal<<<blocks, threads>>>(inputImageMeta, extendedImageMeta, deviceInputSignal, 
+            extend2D_Horizontal<<<blocks, threads>>>(inputImageMeta, extendedImageMeta, currentInputSignal, 
                                                      deviceTmpMemory, filterLength);
             debugTmpMemory(deviceTmpMemory, extendedImageSize, extendedImageMeta.imageWidth);
         } else {
-            extend2D_Vertical<<<blocks, threads>>>(inputImageMeta, extendedImageMeta, deviceInputSignal, 
+            extend2D_Vertical<<<blocks, threads>>>(inputImageMeta, extendedImageMeta, currentInputSignal, 
                                                      deviceTmpMemory, filterLength);
             debugTmpMemory(deviceTmpMemory, extendedImageSize, extendedImageMeta.imageHeight);
         }
@@ -247,7 +248,7 @@ void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
             blockHeight = currentImageMeta.yEnd - currentImageMeta.yStart;
             extendedImageSize = calculateExtendedSignalLength(blockWidth, blockHeight, filterLength, isHorizontal);
         }
-
+        currentInputSignal = deviceOutputCoefficients;
         isHorizontal = !isHorizontal;
     }
     cudaFree(deviceTmpMemory);
