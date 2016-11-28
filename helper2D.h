@@ -17,12 +17,19 @@ struct ImageMeta {
 
 __device__ int64 translateToRealIndex(struct ImageMeta inputSize, int64 index,
                                       bool isHorizontal) {
-    int64 realStride = (isHorizontal) ? inputSize.imageWidth : inputSize.imageWidth;
+    int64 realStride = inputSize.imageWidth;
 
     int64 inputStride = (isHorizontal) ? (inputSize.xEnd - inputSize.xStart): 
                                          (inputSize.yEnd - inputSize.yStart);
-    int64 y = index / inputStride;
-    int64 x = index % inputStride;
+    
+    int64 x,y;
+    if(isHorizontal) {
+        y = index / inputStride;
+        x = index % inputStride;
+    } else {
+        x = index / inputStride;
+        y = index % inputStride;
+    }
     return (y + inputSize.yStart) * realStride + inputSize.xStart + x;
 }
 
@@ -163,7 +170,7 @@ void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
 
     double * deviceTmpMemory = initTmpCoefficientMemory(extendedImageSize);
 
-    bool isHorizontal = false;
+    bool isHorizontal = true;
         
     for(int i = 0; i < levelsToCompress; i++) {
 
@@ -195,13 +202,19 @@ void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
 
         //set up output image meta
         struct ImageMeta imageMetaHigh = outputImageMeta;
-        imageMetaHigh.yStart = imageMetaHigh.imageHeight / 2;
-
         struct ImageMeta imageMetaLow = outputImageMeta;
-        imageMetaLow.yEnd = imageMetaLow.imageHeight / 2;
+        int64 convolveImagSize = convolveImagSize = blockWidth * blockHeight / 2; 
+
+        if(isHorizontal) {
+            imageMetaHigh.yStart = imageMetaHigh.yStart + blockHeight / 2; 
+            imageMetaLow.yEnd = imageMetaHigh.yStart + blockHeight / 2;
+        } else {
+            imageMetaHigh.xStart = imageMetaHigh.xStart + blockHeight / 2;
+            imageMetaLow.xEnd = imageMetaHigh.xStart + blockHeight / 2;
+        }
 
         //convolve the image
-        int64 convolveImagSize = outputImageMeta.imageHeight * outputImageMeta.imageWidth / 2; 
+
         calculateBlockSize(convolveImagSize, threads, blocks);
 
         if (isHorizontal) {
