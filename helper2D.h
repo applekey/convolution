@@ -151,6 +151,7 @@ int64 calculateExtendedSignalLength(int64 width, int64 height, int64 filterSize,
     return (isHorizontal) ? width * (height + filterSideSize * 2) : 
                             height * (width + filterSideSize * 2) ; 
 }
+
 void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
                       double * deviceInputSignal, 
                       struct ImageMeta & inputImageMeta,
@@ -194,12 +195,12 @@ void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
             extend2D_Horizontal<<<blocks, threads>>>(inputImageMeta, extendedImageMeta, currentInputSignal, 
                                                      deviceTmpMemory, filterLength);
             int64 extendedWidth =  extendedImageMeta.xEnd - extendedImageMeta.xStart;
-            debugTmpMemory(deviceTmpMemory, extendedImageSize, extendedWidth);
+            //debugTmpMemory(deviceTmpMemory, extendedImageSize, extendedWidth);
         } else {
             extend2D_Vertical<<<blocks, threads>>>(inputImageMeta, extendedImageMeta, currentInputSignal, 
                                                      deviceTmpMemory, filterLength);
             int64 extendedHeight =  extendedImageMeta.yEnd - extendedImageMeta.yStart;
-            debugTmpMemory(deviceTmpMemory, extendedImageSize, extendedHeight);
+            //debugTmpMemory(deviceTmpMemory, extendedImageSize, extendedHeight);
         }
 
         //set up output image meta
@@ -254,3 +255,14 @@ void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
     }
     cudaFree(deviceTmpMemory);
 }   
+
+//void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
+                      //double * deviceInputSignal, 
+                      //struct ImageMeta & inputImageMeta,
+                      //double * deviceLowFilter,
+                      //double * deviceHighFilter,
+                      //int64 filterLength,
+                      //struct ImageMeta & outputImageMeta,
+                      //double * deviceOutputCoefficients) {
+
+//}
