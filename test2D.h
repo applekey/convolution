@@ -1,7 +1,8 @@
 #include "waveletFilter.h"
 
-#define SIGNAL_LENGTH_2D 8
-#define COMPRESSION_LEVELS_2D 3
+#define SIGNAL_LENGTH_2D 16384 
+//#define SIGNAL_LENGTH_2D 16
+#define COMPRESSION_LEVELS_2D 1
 
 #include "helper2D.h"
 
@@ -128,10 +129,14 @@ void test2D() {
     imageMeta.xEnd = SIGNAL_LENGTH_2D;
     imageMeta.yEnd = SIGNAL_LENGTH_2D;
 
+    auto startDecompose = std::chrono::system_clock::now();
     dwt2D_Horizontal(levels, COMPRESSION_LEVELS_2D, device_signal_array_2D,
                     imageMeta, device_low_filter_array_2D,
                     device_high_filter_array_2D, 9, imageMeta,
                     device_output_array_2D);
+    auto endDecompose = std::chrono::system_clock::now();
     transferMemoryBack_2D();
-    printResult_2D();
+    std::chrono::duration<double> diff = endDecompose-startDecompose;
+    std::cout<< diff.count() << " s\n";
+    //printResult_2D();
 }

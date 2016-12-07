@@ -97,6 +97,7 @@ __global__ void extend2D_Vertical(struct ImageMeta origionalImageSize,
     if(index >= totalBlockSize) {
         return;
     }
+
     int64 realStride = origionalImageSize.imageWidth;
 
     int64 sideWidth = filterSize / 2;
@@ -107,6 +108,7 @@ __global__ void extend2D_Vertical(struct ImageMeta origionalImageSize,
     int64 yInputStride = extendedInputSize.yEnd - extendedInputSize.yStart;
 
     int64 rotatedIndex = xIndex * yInputStride + yIndex; 
+
     if(yIndex < sideWidth) {
 
         int64 inputIndex = (extendedInputSize.yStart) * realStride + 
@@ -132,16 +134,38 @@ __global__ void extend2D_Vertical(struct ImageMeta origionalImageSize,
 __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
                                        double * filter, int filterLength,
                                        double * output, struct ImageMeta outputImageMeta) {
-    int64 index = calculateIndex();
-    int64 inputIndex = index * 2 + (filterLength / 2);
+    int64 index = calculateIndex() * 2;
+    
+    int64 stride = outputImageMeta.imageWidth;
+    int64 height = outputImageMeta.imageHeight;
 
-    double sum = 0.0;
+    int64 yIndex = index / stride;
+    int64 xIndex = index % stride;
 
-    for(int64 i = 0; i < filterLength; i++) {
-        sum += filter[i] * inputSignal[inputIndex - (filterLength / 2) + i];
-    }
+    int64 filterSideWidth = filterLength / 2;
 
-    int64 outputIndex = translateToRealIndex(outputImageMeta, index, false);
+    double sum = 0;
+    if(yIndex > filterSideWidth && yIndex < (height - filterSideWidth)) {
+        //-4
+        sum += filter[0] * inputSignal[ (yIndex -4) * stride + xIndex];
+        //-3
+        sum += filter[1] * inputSignal[ (yIndex -3) * stride + xIndex];
+        //-2
+        sum += filter[2] * inputSignal[ (yIndex -2) * stride + xIndex];
+        //-1
+        sum += filter[3] * inputSignal[(yIndex -1) * stride + xIndex];
+        //0
+        sum += filter[4] * inputSignal[(yIndex) * stride + xIndex];
+        //1
+        sum += filter[5] * inputSignal[(yIndex+1) * stride + xIndex];
+        //2
+        sum += filter[6] * inputSignal[(yIndex+2) * stride + xIndex];
+        //3
+        sum += filter[7] * inputSignal[(yIndex+3) * stride + xIndex];
+        //4
+        sum += filter[8] * inputSignal[(yIndex+4) * stride + xIndex];
+    } 
+    int64 outputIndex = translateToRealIndex(outputImageMeta, index/2, false);
     output[outputIndex] = sum;
 }
 
@@ -171,37 +195,38 @@ void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
 
     double * deviceTmpMemory = initTmpCoefficientMemory(extendedImageSize);
 
-    bool isHorizontal = true;
+    bool isHorizontal = false;
         
     for(int i = 0; i < levelsToCompress; i++) {
 
         //calculate extended Image Meta horizontal / vert
-        struct ImageMeta extendedImageMeta = currentImageMeta;
-        int64 extendedLength = (filterLength / 2) * 2;
+        //struct ImageMeta extendedImageMeta = currentImageMeta;
+        //int64 extendedLength = (filterLength / 2) * 2;
 
-        if(isHorizontal) {
-            extendedImageMeta.xEnd += extendedLength;
-            extendedImageMeta.imageWidth += extendedLength;
-        } else {
-            extendedImageMeta.yEnd += extendedLength;
-            extendedImageMeta.imageHeight += extendedLength;
-        }
+        //if(isHorizontal) {
+            //extendedImageMeta.xEnd += extendedLength;
+            //extendedImageMeta.imageWidth += extendedLength;
+        //} else {
+            //extendedImageMeta.yEnd += extendedLength;
+            //extendedImageMeta.imageHeight += extendedLength;
+        //}
 
         //extend the image horizontal / vert 
         int threads;
         dim3 blocks;
-        calculateBlockSize(extendedImageSize, threads, blocks);
-        if(isHorizontal) {
-            extend2D_Horizontal<<<blocks, threads>>>(inputImageMeta, extendedImageMeta, currentInputSignal, 
-                                                     deviceTmpMemory, filterLength);
-            int64 extendedWidth =  extendedImageMeta.xEnd - extendedImageMeta.xStart;
-            //debugTmpMemory(deviceTmpMemory, extendedImageSize, extendedWidth);
-        } else {
-            extend2D_Vertical<<<blocks, threads>>>(inputImageMeta, extendedImageMeta, currentInputSignal, 
-                                                     deviceTmpMemory, filterLength);
-            int64 extendedHeight =  extendedImageMeta.yEnd - extendedImageMeta.yStart;
-            //debugTmpMemory(deviceTmpMemory, extendedImageSize, extendedHeight);
-        }
+        //calculateBlockSize(extendedImageSize, threads, blocks);
+
+        //if(isHorizontal) {
+            //extend2D_Horizontal<<<blocks, threads>>>(inputImageMeta, extendedImageMeta, currentInputSignal, 
+                                                     //deviceTmpMemory, filterLength);
+            //int64 extendedWidth =  extendedImageMeta.xEnd - extendedImageMeta.xStart;
+            ////debugTmpMemory(deviceTmpMemory, extendedImageSize, extendedWidth);
+        //} else {
+            //extend2D_Vertical<<<blocks, threads>>>(inputImageMeta, extendedImageMeta, currentInputSignal, 
+                                                     //deviceTmpMemory, filterLength);
+            //int64 extendedHeight =  extendedImageMeta.yEnd - extendedImageMeta.yStart;
+            ////debugTmpMemory(deviceTmpMemory, extendedImageSize, extendedHeight);
+        //}
 
         //set up output image meta
         struct ImageMeta imageMetaHigh = outputImageMeta;
@@ -222,22 +247,22 @@ void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
 
         if (isHorizontal) {
             //low filter
-            convolve2D_Horizontal<<<blocks, threads>>> (deviceTmpMemory, convolveImagSize, 
-                                                        deviceLowFilter, filterLength,
-                                                        deviceOutputCoefficients, imageMetaLow);
+            //convolve2D_Horizontal<<<blocks, threads>>> (deviceTmpMemory, convolveImagSize, 
+                                                        //deviceLowFilter, filterLength,
+                                                        //deviceOutputCoefficients, imageMetaLow);
 
-            //high filter
-            convolve2D_Horizontal<<<blocks, threads>>> (deviceTmpMemory, convolveImagSize, 
-                                                        deviceHighFilter, filterLength,
-                                                        deviceOutputCoefficients, imageMetaHigh);
+            ////high filter
+            //convolve2D_Horizontal<<<blocks, threads>>> (deviceTmpMemory, convolveImagSize, 
+                                                        //deviceHighFilter, filterLength,
+                                                        //deviceOutputCoefficients, imageMetaHigh);
         } else {
             //low filter
-            convolve2D_Vertical<<<blocks, threads>>> (deviceTmpMemory, convolveImagSize, 
+            convolve2D_Vertical<<<blocks, threads>>> (currentInputSignal, convolveImagSize, 
                                                         deviceLowFilter, filterLength,
                                                         deviceOutputCoefficients, imageMetaLow);
 
             //high filter
-            convolve2D_Vertical<<<blocks, threads>>> (deviceTmpMemory, convolveImagSize, 
+            convolve2D_Vertical<<<blocks, threads>>> (currentInputSignal, convolveImagSize, 
                                                         deviceHighFilter, filterLength,
                                                         deviceOutputCoefficients, imageMetaHigh);
         } 
@@ -255,14 +280,3 @@ void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
     }
     cudaFree(deviceTmpMemory);
 }   
-
-//void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
-                      //double * deviceInputSignal, 
-                      //struct ImageMeta & inputImageMeta,
-                      //double * deviceLowFilter,
-                      //double * deviceHighFilter,
-                      //int64 filterLength,
-                      //struct ImageMeta & outputImageMeta,
-                      //double * deviceOutputCoefficients) {
-
-//}

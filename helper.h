@@ -52,6 +52,7 @@ __device__ int64 calculateIndex() {
     int64 blockId = blockIdx.y * gridDim.x + blockIdx.x;
     return blockId * blockDim.x + threadIdx.x;
 }
+
 __global__ void convolveWavelet(double * filter, int64 filterLength,
                                 double * inputSignal, int64 signalLength,
                                 double * output, int64 outputOffset) {
@@ -60,11 +61,31 @@ __global__ void convolveWavelet(double * filter, int64 filterLength,
         return;
     }
     int64 inputIndex = index * 2 + (filterLength / 2);
+    // load into shared memory
+    __shared__ double s[1024 + 8]; //max per
+    s[threadIdx.x] = inputSignal[inputIndex];
+
+    if(threadIdx.x == 0) {
+        s[1024] = 1.0; 
+        s[1025] = 1.0; 
+        s[1026] = 1.0; 
+        s[1027] = 1.0; 
+        s[1028] = 1.0; 
+        s[1029] = 1.0; 
+        s[1030] = 1.0; 
+        s[1031] = 1.0; 
+        s[1032] = 1.0; 
+    }
+
+    __syncthreads();    
+     
 
     double sum = 0.0;
 
     for(int64 i = 0; i < filterLength; i++) {
-        sum += filter[i] * inputSignal[inputIndex - (filterLength / 2) + i];
+        sum += filter[i] * s[threadIdx.x + i];
+
+        //sum += filter[i] * inputSignal[inputIndex - (filterLength / 2) + i];
     }
 
     output[index + outputOffset] = sum;
@@ -183,6 +204,7 @@ void calculateBlockSize(int64 totalLength,
         blocks.y = 1;
         blocks.z = 1;
     }
+    //std::cerr<<"block: "<<blocks.x<<" "<<blocks.y<<" "<<blocks.z<<std::endl;
 }
 
 void debugTmpMemory(double * deviceMem, int64 length, int64 stride = 0) {
@@ -315,6 +337,6 @@ void dwt(MyVector & L, int levelsToCompress,
     //finally copy the low coefficients to the end
 
     //free tmp memory
-    cudaFree(deviceLowCoefficientMemory);
+    //cudaFree(deviceLowCoefficientMemory);
 }
 #endif

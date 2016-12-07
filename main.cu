@@ -12,14 +12,14 @@
 // All the code below is to test 1D signal,
 // the code to test 2D is in test2D.h
 /*--------------------------------------*/
-#define SIGNAL_LENGTH 134217728
-/*#define SIGNAL_LENGTH 67108864 */
+/*#define SIGNAL_LENGTH 134217728*/
+#define SIGNAL_LENGTH 67108864 
 /*#define SIGNAL_LENGTH 33554432*/
 /*#define SIGNAL_LENGTH 16777216 */
 /*#define SIGNAL_LENGTH 1048576 */
 /*#define SIGNAL_LENGTH 524288 */
 /*#define SIGNAL_LENGTH  32 */
-#define COMPRESSION_LEVELS 10
+#define COMPRESSION_LEVELS 1
 
 using namespace std;
 
@@ -148,6 +148,9 @@ void transferMemoryBack(int64 outputLength) {
     outputLength -=SIGNAL_LENGTH / 2;
     int64 num_bytes = outputLength * sizeof(double);
     assert(num_bytes != 0);
+
+        /*cudaHostAlloc((void**)&host_output_array, num_bytes, */
+        /*cudaHostAllocDefault) ;*/
 
     host_output_array = (double*)malloc(num_bytes);
     cudaMemcpy(host_output_array, device_output_array + SIGNAL_LENGTH / 2, num_bytes, cudaMemcpyDeviceToHost);
@@ -278,8 +281,8 @@ void test1D() {
     initReconstructedSignal();
 
     /*-------------------COMPRESS THE SIGNAL---------------------*/
-    auto startDecompose = std::chrono::system_clock::now();
     copyInputSignal();
+    auto startDecompose = std::chrono::system_clock::now();
     //run filter
     dwt(coefficientIndicies, COMPRESSION_LEVELS,
         device_signal_array, SIGNAL_LENGTH,
@@ -287,11 +290,11 @@ void test1D() {
         device_output_array, 9);
 
     //transfer output back
-    transferMemoryBack(outputLength);
 
     auto endDecompose = std::chrono::system_clock::now();
     std::chrono::duration<double> diff = endDecompose-startDecompose;
     std::cout<< diff.count() << " s\n";
+    transferMemoryBack(outputLength);
     /*printOutputCoefficients(host_output_array, coefficientIndicies);*/
 
     /*int ab = calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, SIGNAL_LENGTH);*/
