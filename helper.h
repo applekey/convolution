@@ -159,14 +159,6 @@ __global__ void inverseConvolve(double * lowReconstructFilter, double * highReco
     reconstructedSignal[index] = sum;
 }
 
-double * initTmpCoefficientMemory(int64 signalLength) {
-    double * lowCoefficientMemory = 0;
-    int64 num_bytes = signalLength * sizeof(double);
-    assert(num_bytes != 0);
-    cudaMalloc((void**)&lowCoefficientMemory, num_bytes);
-    return lowCoefficientMemory;
-}
-
 void calculateBlockSize(int64 totalLength,
                         int & threads, dim3 & blocks) {
 
@@ -232,12 +224,14 @@ void iDwt(MyVector & L, int levelsToReconstruct,
           double * coefficients,
           double * deviceLowReconstructFilter,
           double * deviceHighReconstructFilter,
-          double * reconstructedSignal) {
+          double * reconstructedSignal,
+          double * extendedHighCoeff,
+          double * extendedLowCoeff) {
 
     int64 maxExtendedSignalLength = signalLength;
 
-    double * extendedHighCoeff = initTmpCoefficientMemory(maxExtendedSignalLength);
-    double * extendedLowCoeff = initTmpCoefficientMemory(maxExtendedSignalLength);
+    //double * extendedHighCoeff = initTmpCoefficientMemory(maxExtendedSignalLength);
+    //double * extendedLowCoeff = initTmpCoefficientMemory(maxExtendedSignalLength);
 
     int currentCoefficientIndex = L.size() - 2 - 1;
 
@@ -278,8 +272,6 @@ void iDwt(MyVector & L, int levelsToReconstruct,
         currentHighCoefficients = reconstructedSignal;
 
     }
-    cudaFree(extendedHighCoeff);
-    cudaFree(extendedLowCoeff);
 }
 
 void dwt(MyVector & L, int levelsToCompress,
@@ -287,6 +279,7 @@ void dwt(MyVector & L, int levelsToCompress,
          double * deviceLowFilter,
          double * deviceHighFilter,
          double * deviceOutputCoefficients,
+         double * deviceLowCoefficientMemory,
          int64 filterLength) {
 
     int64 currentSignalLength = signalLength;
@@ -295,7 +288,6 @@ void dwt(MyVector & L, int levelsToCompress,
 
     int64 inputSignalExtendedLength = currentSignalLength + (filterLength / 2 ) * 2;
 
-    double * deviceLowCoefficientMemory = initTmpCoefficientMemory(inputSignalExtendedLength);
     double * currentDeviceSignal = deviceInputSignal;
 
     for(int level = 0; level < levelsToCompress; level++) {

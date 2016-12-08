@@ -264,6 +264,14 @@ void writeResultsToMemory(double * output, int64 length) {
     myfile.close();
 }
 
+double * initTmpCoefficientMemory(int64 signalLength) {
+    double * lowCoefficientMemory = 0;
+    int64 num_bytes = signalLength * sizeof(double);
+    assert(num_bytes != 0);
+    cudaMalloc((void**)&lowCoefficientMemory, num_bytes);
+    return lowCoefficientMemory;
+}
+
 void test1D() {
     std::cerr<<"Testing 1D Decompose"<<std::endl;
     MyVector coefficientIndicies;
@@ -280,6 +288,9 @@ void test1D() {
     initOutput(outputLength);
     initReconstructedSignal();
 
+    int64 extendedSignalLength = SIGNAL_LENGTH + (SIGNAL_LENGTH / 2 ) * 2; 
+    double * tmpMemoryDWT = initTmpCoefficientMemory(extendedSignalLength);
+
     /*-------------------COMPRESS THE SIGNAL---------------------*/
     copyInputSignal();
     auto startDecompose = std::chrono::system_clock::now();
@@ -287,7 +298,7 @@ void test1D() {
     dwt(coefficientIndicies, COMPRESSION_LEVELS,
         device_signal_array, SIGNAL_LENGTH,
         device_low_filter_array, device_high_filter_array,
-        device_output_array, 9);
+        device_output_array, tmpMemoryDWT, 9);
 
     //transfer output back
 
@@ -295,6 +306,7 @@ void test1D() {
     std::chrono::duration<double> diff = endDecompose-startDecompose;
     std::cout<< diff.count() << " s\n";
     transferMemoryBack(outputLength);
+    cudaFree(tmpMemoryDWT);
     /*printOutputCoefficients(host_output_array, coefficientIndicies);*/
 
     /*int ab = calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, SIGNAL_LENGTH);*/
@@ -314,28 +326,33 @@ void test1D() {
     /*}*/
 
     /*-------------------UN-COMPRESS THE SIGNAL---------------------*/
+    double * tmpMemoryDWTHigh = initTmpCoefficientMemory(SIGNAL_LENGTH);
+    double * tmpMemoryDWTLow = initTmpCoefficientMemory(SIGNAL_LENGTH);
+
     auto startReconstruct = std::chrono::system_clock::now();
     iDwt(coefficientIndicies, COMPRESSION_LEVELS,
          SIGNAL_LENGTH, 9, device_output_array + SIGNAL_LENGTH / 2,
          device_low_reconstruct_filter_array,
          device_high_reconstruct_filter_array,
-         device_reconstruted_output_array);
+         device_reconstruted_output_array,
+         tmpMemoryDWTHigh, tmpMemoryDWTLow);
 
-    transferReconstructedMemoryBack(SIGNAL_LENGTH);
     auto endReconstruct = std::chrono::system_clock::now();
     diff = endReconstruct-startReconstruct;
     std::cout<< diff.count() << " s\n";
-    /*printReconstructedSignal();*/
+    transferReconstructedMemoryBack(SIGNAL_LENGTH);
     verifyReconstructedSignal();
     /*printReconstructedSignal();*/
 
     /*-------------------CLEAN-UP---------------------*/
     //done free memory
+    cudaFree(tmpMemoryDWTHigh);
+    cudaFree(tmpMemoryDWTLow);
     freeMemory();
 }
 
 int main(int argc, const char * argv[]) {
-    /*test1D();*/
-    test2D();
+    test1D();
+    /*test2D();*/
     return 0;
 }
