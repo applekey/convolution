@@ -163,7 +163,8 @@ void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
                       double * deviceHighFilter,
                       int64 filterLength,
                       struct ImageMeta & outputImageMeta,
-                      double * deviceOutputCoefficients) {
+                      double * deviceOutputCoefficients,
+                      double * deviceTmpMemory) {
 
     struct ImageMeta currentImageMeta = inputImageMeta;
     double * currentInputSignal = deviceInputSignal;
@@ -172,9 +173,7 @@ void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
     int blockWidth = inputImageMeta.imageWidth; 
     int blockHeight = inputImageMeta.imageHeight; 
 
-    double * deviceTmpMemory = initTmpCoefficientMemory(blockWidth * blockHeight);
-
-    bool isHorizontal = false;
+    bool isHorizontal = true;
         
     for(int i = 0; i < levelsToCompress; i++) {
 
@@ -233,5 +232,5 @@ void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
         }
         isHorizontal = !isHorizontal;
     }
-    cudaFree(deviceTmpMemory);
+    //cudaFree(deviceTmpMemory);
 }   

@@ -335,8 +335,5 @@ void dwt(MyVector & L, int levelsToCompress,
         currentDeviceSignal = deviceOutputCoefficients;
     }
     //finally copy the low coefficients to the end
-
-    //free tmp memory
-    //cudaFree(deviceLowCoefficientMemory);
 }
 #endif

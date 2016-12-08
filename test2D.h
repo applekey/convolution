@@ -1,8 +1,8 @@
 #include "waveletFilter.h"
 
-//#define SIGNAL_LENGTH_2D 16384 
-#define SIGNAL_LENGTH_2D 16
-#define COMPRESSION_LEVELS_2D 1
+#define SIGNAL_LENGTH_2D 16384 
+//#define SIGNAL_LENGTH_2D 16
+#define COMPRESSION_LEVELS_2D 2
 
 #include "helper2D.h"
 
@@ -17,6 +17,9 @@ double * device_low_filter_array_2D = 0;
 //high filters
 double * host_high_filter_array_2D = 0;
 double * device_high_filter_array_2D = 0;
+
+//tmp memory
+double * deviceTmpMemory = 0;
 
 //output
 double * host_output_array_2D = 0;
@@ -88,6 +91,13 @@ void initOutput_2D() {
     }
 }
 
+void initDeviceTmpMemory() {
+    int64 num_bytes = get1DSignalLength() * sizeof(double);
+    assert(num_bytes != 0);
+    cudaMalloc((void**)&deviceTmpMemory, num_bytes);
+}
+    
+
 void transferMemoryBack_2D() {
     int64 num_bytes = get1DSignalLength() * sizeof(double);
     assert(num_bytes != 0);
@@ -118,6 +128,7 @@ void test2D() {
 
     initSignal2D();
     copyInputSignal2D();
+    initDeviceTmpMemory();
     //decompose the signal 
     MyVector levels;
 
@@ -133,10 +144,16 @@ void test2D() {
     dwt2D_Horizontal(levels, COMPRESSION_LEVELS_2D, device_signal_array_2D,
                     imageMeta, device_low_filter_array_2D,
                     device_high_filter_array_2D, 9, imageMeta,
-                    device_output_array_2D);
+                    device_output_array_2D, deviceTmpMemory);
     auto endDecompose = std::chrono::system_clock::now();
     transferMemoryBack_2D();
     std::chrono::duration<double> diff = endDecompose-startDecompose;
     std::cout<< diff.count() << " s\n";
+
+    do 
+    {
+        std::cout << '\n' << "Press a key to continue...";
+    } while (std::cin.get() != '\n');
+
     printResult_2D();
 }
