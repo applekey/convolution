@@ -62,30 +62,30 @@ __global__ void convolveWavelet(double * filter, int64 filterLength,
     }
     int64 inputIndex = index * 2 + (filterLength / 2);
     // load into shared memory
-    __shared__ double s[1024 + 8]; //max per
-    s[threadIdx.x] = inputSignal[inputIndex];
+    //__shared__ double s[1024 + 8]; //max per
+    //s[threadIdx.x] = inputSignal[inputIndex];
 
-    if(threadIdx.x == 0) {
-        s[1024] = 1.0; 
-        s[1025] = 1.0; 
-        s[1026] = 1.0; 
-        s[1027] = 1.0; 
-        s[1028] = 1.0; 
-        s[1029] = 1.0; 
-        s[1030] = 1.0; 
-        s[1031] = 1.0; 
-        s[1032] = 1.0; 
-    }
+    //if(threadIdx.x == 0) {
+        //s[1024] = 1.0; 
+        //s[1025] = 1.0; 
+        //s[1026] = 1.0; 
+        //s[1027] = 1.0; 
+        //s[1028] = 1.0; 
+        //s[1029] = 1.0; 
+        //s[1030] = 1.0; 
+        //s[1031] = 1.0; 
+        //s[1032] = 1.0; 
+    //}
 
-    __syncthreads();    
+    //__syncthreads();    
      
 
     double sum = 0.0;
 
     for(int64 i = 0; i < filterLength; i++) {
-        sum += filter[i] * s[threadIdx.x + i];
+        //sum += filter[i] * s[threadIdx.x + i];
 
-        //sum += filter[i] * inputSignal[inputIndex - (filterLength / 2) + i];
+        sum += filter[i] * inputSignal[inputIndex - (filterLength / 2) + i];
     }
 
     output[index + outputOffset] = sum;
