@@ -46,7 +46,6 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
     int64 xIndex = index * 2 % stride;
 
     int64 filterSideWidth = filterLength / 2;
-    double sum = 0.0;
 
     double vals[9];
 
@@ -68,6 +67,7 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
         vals[i] = inputSignal[yIndex * stride + xIndex - filterSideWidth + i ]; 
     }
 
+    double sum = 0.0;
     //-4
     sum += vals[0] * filter[0];
     //-3
@@ -86,27 +86,6 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
     sum += vals[7]* filter[7];
     //4
     sum += vals[8]* filter[8];
-/*
-    //-4
-    sum += filter[0] * vals[ yIndex * stride + xIndex -4];
-    //-3
-    sum += filter[1] * vals[yIndex * stride + xIndex -3];
-    //-2
-    sum += filter[2] * vals[ yIndex * stride + xIndex -2];
-    //-1
-    sum += filter[3] * vals[yIndex * stride + xIndex -1];
-    //0
-    sum += filter[4] * vals[yIndex * stride + xIndex ];
-    //1
-    sum += filter[5] * vals[yIndex * stride + xIndex + 1];
-    //2
-    sum += filter[6] * vals[yIndex * stride + xIndex +2];
-    //3
-    sum += filter[7] * vals[yIndex * stride + xIndex + 3];
-    //4
-    sum += filter[8] * vals[yIndex * stride + xIndex+ 4];
-
-*/
 
     output[yIndex * stride + xIndex/2 + offset] = sum;
 }
@@ -127,32 +106,46 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
 
     int64 filterSideWidth = filterLength / 2;
 
-    //__shared__ int s[1024];
-    //__syncthreads(); 
+    double vals[9];
 
-    double sum = 0;
-    double inputVals[9];
+    int fillLeft = filterSideWidth - yIndex;
+    int filledL = 0;
+    for(int i =0; i< fillLeft; i++) {
+        vals[i] = 1.0;
+        filledL += 1;
+    } 
+
+    int fillRight = yIndex - (height - filterSideWidth - 1);
+    int filledR = 0;
+    for(int i =0; i< fillRight; i++) {
+        vals[9 - i] = 1.0;
+        filledR += 1;
+    } 
+
+    for(int i = filledL; i < 9 - filledR; i++) {
+        vals[i] = inputSignal[(yIndex - filterSideWidth + i)* stride + xIndex ]; 
+    }
+
+    double sum = 0.0;
+    //-4
+    sum += vals[0] * filter[0];
+    //-3
+    sum += vals[1]* filter[1];
+    //-2
+    sum += vals[2]* filter[2];
+    //-1
+    sum += vals[3]* filter[3];
+    //0
+    sum += vals[4]* filter[4];
+    //1
+    sum += vals[5]* filter[5];
+    //2
+    sum += vals[6]* filter[6];
+    //3
+    sum += vals[7]* filter[7];
+    //4
+    sum += vals[8]* filter[8];
     
-    if(yIndex > filterSideWidth && yIndex < (height - filterSideWidth)) {
-        //-4
-        sum += filter[0] * inputSignal[ (yIndex -4) * stride + xIndex];
-        //-3
-        sum += filter[1] * inputSignal[ (yIndex -3) * stride + xIndex];
-        //-2
-        sum += filter[2] * inputSignal[ (yIndex -2) * stride + xIndex];
-        //-1
-        sum += filter[3] * inputSignal[(yIndex -1) * stride + xIndex];
-        //0
-        sum += filter[4] * inputSignal[(yIndex) * stride + xIndex];
-        //1
-        sum += filter[5] * inputSignal[(yIndex+1) * stride + xIndex];
-        //2
-        sum += filter[6] * inputSignal[(yIndex+2) * stride + xIndex];
-        //3
-        sum += filter[7] * inputSignal[(yIndex+3) * stride + xIndex];
-        //4
-        sum += filter[8] * inputSignal[(yIndex+4) * stride + xIndex];
-    }  
     output[(yIndex/2 + offset)* stride + xIndex] = sum;
 }
 
@@ -181,7 +174,7 @@ void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
 
     double * deviceTmpMemory = initTmpCoefficientMemory(blockWidth * blockHeight);
 
-    bool isHorizontal = true;
+    bool isHorizontal = false;
         
     for(int i = 0; i < levelsToCompress; i++) {
 
@@ -206,7 +199,7 @@ void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
 
         if (isHorizontal) {
             //low filter
-            deviceTmpMemory = deviceOutputCoefficients;
+            //deviceTmpMemory = deviceOutputCoefficients;
             convolve2D_Horizontal<<<blocks, threads>>> (currentInputSignal, convolveImagSize, 
                                                         deviceLowFilter, filterLength,
                                                         deviceTmpMemory, imageMetaLow, 0);
@@ -240,5 +233,5 @@ void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
         }
         isHorizontal = !isHorizontal;
     }
-    //cudaFree(deviceTmpMemory);
+    cudaFree(deviceTmpMemory);
 }   
