@@ -228,11 +228,6 @@ void iDwt(MyVector & L, int levelsToReconstruct,
           double * extendedHighCoeff,
           double * extendedLowCoeff) {
 
-    int64 maxExtendedSignalLength = signalLength;
-
-    //double * extendedHighCoeff = initTmpCoefficientMemory(maxExtendedSignalLength);
-    //double * extendedLowCoeff = initTmpCoefficientMemory(maxExtendedSignalLength);
-
     int currentCoefficientIndex = L.size() - 2 - 1;
 
     double * currentHighCoefficients;
@@ -285,8 +280,6 @@ void dwt(MyVector & L, int levelsToCompress,
     int64 currentSignalLength = signalLength;
     int64 currentHighCoefficientOffset = 0 + signalLength / 2;
     //create a tempory low coefficient / signal extend array
-
-    int64 inputSignalExtendedLength = currentSignalLength + (filterLength / 2 ) * 2;
 
     double * currentDeviceSignal = deviceInputSignal;
 

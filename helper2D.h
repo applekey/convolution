@@ -40,7 +40,6 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
     int64 index = calculateIndex();
 
     int64 stride = outputImageMeta.imageWidth;
-    int64 height = outputImageMeta.imageHeight;
 
     int64 yIndex = index * 2/ stride;
     int64 xIndex = index * 2 % stride;
@@ -227,10 +226,26 @@ void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
             currentImageMeta.yEnd /= 2; 
             blockWidth = currentImageMeta.xEnd - currentImageMeta.xStart;
             blockHeight = currentImageMeta.yEnd - currentImageMeta.yStart;
-            //extendedImageSize = calculateExtendedSignalLength(blockWidth, blockHeight, filterLength, isHorizontal);
             currentInputSignal = deviceOutputCoefficients;
         }
         isHorizontal = !isHorizontal;
     }
-    //cudaFree(deviceTmpMemory);
-}   
+}
+/*---------------------------INVERSE-------------------------*/
+void inverseConvolveHorizontal() {
+}
+void inverseConvolveVertical() {
+}
+void iDwt2D_Horizontal(MyVector & L, int levelsToCompressUncompress,
+                      double * deviceInputSignal, 
+                      struct ImageMeta & inputImageMeta,
+                      double * deviceILowFilter,
+                      double * deviceIHighFilter,
+                      int64 filterLength,
+                      struct ImageMeta & outputImageMeta,
+                      double * deviceOutputCoefficients,
+                      double * deviceTmpMemory) {
+
+    bool isHorizontal = true;
+
+}

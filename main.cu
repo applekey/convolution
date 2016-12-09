@@ -212,9 +212,9 @@ void verifyReconstructedSignal() {
             /*std::cerr<<host_reconstruct_output_array[i]<<std::endl;*/
             allCorrect = false;
             std::cerr<<i<<std::endl;
-            assert(allCorrect);
         }
     }
+    assert(allCorrect);
 }
 
 void freeMemory() {
