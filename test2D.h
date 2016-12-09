@@ -145,10 +145,10 @@ void test2D() {
                     imageMeta, device_low_filter_array_2D,
                     device_high_filter_array_2D, 9, imageMeta,
                     device_output_array_2D, deviceTmpMemory);
-    transferMemoryBack_2D();
     auto endDecompose = std::chrono::system_clock::now();
     std::chrono::duration<double> diff = endDecompose-startDecompose;
     std::cout<< diff.count() << " s\n";
+    transferMemoryBack_2D();
 
     do 
     {

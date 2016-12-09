@@ -39,6 +39,10 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
                                        double * output, struct ImageMeta outputImageMeta, int64 offset) {
     int64 index = calculateIndex();
 
+    if(index >= signalLength) {
+        return;
+    }
+
     int64 stride = outputImageMeta.imageWidth;
 
     int64 yIndex = index * 2/ stride;
@@ -96,7 +100,10 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
     int64 origIndex = calculateIndex();
     int64 index = origIndex;
 
-    
+    if(index >= signalLength) {
+        return;
+    }
+
     int64 stride = outputImageMeta.imageWidth;
     int64 height = outputImageMeta.imageHeight;
 
@@ -232,9 +239,27 @@ void dwt2D_Horizontal(MyVector & L, int levelsToCompress,
     }
 }
 /*---------------------------INVERSE-------------------------*/
-void inverseConvolveHorizontal() {
-}
 void inverseConvolveVertical() {
+    //TODO
+}
+
+__global__ void inverseConvolveHorizontal(double * deviceInputSignal, int64 filterLength,
+                                          double * lowFilter, double * highFilter,
+                                          struct ImageMeta & inputImageMeta) {
+    int64 index = calculateIndex();
+
+    int64 stride = inputImageMeta.imageWidth;
+    int64 height = inputImageMeta.imageHeight;
+    
+    int64 blockWidth = (inputImageMeta.xEnd - inputImageMeta.xStart) / 2;
+    int64 yIndexLocal = index / blockWidth;
+    int64 xIndexLocal = index % blockWidth;
+    
+    int64 filterSideWidth = filterLength / 2;
+    // do extension here
+
+    double sum = 0; 
+    
 }
 void iDwt2D_Horizontal(MyVector & L, int levelsToCompressUncompress,
                       double * deviceInputSignal, 
