@@ -1,7 +1,7 @@
 #include "waveletFilter.h"
 
-//#define SIGNAL_LENGTH_2D 16384 
-#define SIGNAL_LENGTH_2D 16
+#define SIGNAL_LENGTH_2D 16384 
+//#define SIGNAL_LENGTH_2D 16
 #define COMPRESSION_LEVELS_2D 2
 
 #include "helper2D.h"
@@ -145,8 +145,8 @@ void test2D() {
                     imageMeta, device_low_filter_array_2D,
                     device_high_filter_array_2D, 9, imageMeta,
                     device_output_array_2D, deviceTmpMemory);
-    auto endDecompose = std::chrono::system_clock::now();
     transferMemoryBack_2D();
+    auto endDecompose = std::chrono::system_clock::now();
     std::chrono::duration<double> diff = endDecompose-startDecompose;
     std::cout<< diff.count() << " s\n";
 
