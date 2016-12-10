@@ -130,14 +130,6 @@ __global__ void inverseConvolve(double * lowReconstructFilter, double * highReco
     double sum = 0.0;
     int64 lowIndex, highIndex;
 
-    //if( index % 2 != 0) {
-    //lowIndex = filterLength - 2;
-    //highIndex = filterLength - 1;
-    //} else {
-    //lowIndex = filterLength - 1;
-    //highIndex = filterLength - 2;
-    //}
-
     lowIndex = filterLength - 1;
     highIndex = filterLength - 2;
     //sum low
@@ -155,10 +147,10 @@ __global__ void inverseConvolve(double * lowReconstructFilter, double * highReco
         highIndex -= 2;
         highCoefficientIndex++;
     }
+
     //write out sum
     reconstructedSignal[index] = sum;
 }
-
 void calculateBlockSize(int64 totalLength,
                         int & threads, dim3 & blocks) {
 
