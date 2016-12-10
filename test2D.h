@@ -1,8 +1,8 @@
 #include "waveletFilter.h"
 
-#define SIGNAL_LENGTH_2D 16384 
-//#define SIGNAL_LENGTH_2D 16
-#define COMPRESSION_LEVELS_2D 2
+//#define SIGNAL_LENGTH_2D 16384 
+#define SIGNAL_LENGTH_2D 16
+#define COMPRESSION_LEVELS_2D 1
 
 #include "helper2D.h"
 
@@ -17,6 +17,14 @@ double * device_low_filter_array_2D = 0;
 //high filters
 double * host_high_filter_array_2D = 0;
 double * device_high_filter_array_2D = 0;
+
+//low inverse filters
+double * host_low_inverse_filter_array_2D = 0;
+double * device_low_inverse_filter_array_2D = 0;
+
+//high inverse filters
+double * host_high_inverse_filter_array_2D = 0;
+double * device_high_inverse_filter_array_2D = 0;
 
 //tmp memory
 double * deviceTmpMemory = 0;
@@ -75,12 +83,37 @@ void initHighFilter_2D() {
     int64 highFilterLenght = 9;
     int64 num_bytes = highFilterLenght * sizeof(double);
 
-    host_high_filter_array_2D = (double*)malloc(num_bytes);
+    host_high_inverse_filter_array_2D = (double*)malloc(num_bytes);
 
-    filter2D.getHighPassFilter(host_high_filter_array_2D);
-    cudaMalloc((void**)&device_high_filter_array_2D, num_bytes);
+    filter2D.getHighPassFilter(host_high_inverse_filter_array_2D);
+    cudaMalloc((void**)&device_high_inverse_filter_array_2D, num_bytes);
 
     cudaMemcpy(device_high_filter_array_2D, host_high_filter_array_2D, num_bytes, cudaMemcpyHostToDevice);
+}
+
+void initLowInverseFilter_2D() {
+    int64 lowFilterInverseLenght = 9;
+    int64 num_bytes = lowFilterInverseLenght * sizeof(double);
+
+    host_low_inverse_filter_array_2D = (double*)malloc(num_bytes);
+
+    filter2D.getLowPassFilter(host_low_inverse_filter_array_2D);
+
+    cudaMalloc((void**)&device_low_inverse_filter_array_2D, num_bytes);
+
+    cudaMemcpy(device_low_inverse_filter_array_2D, host_low_inverse_filter_array_2D, num_bytes, cudaMemcpyHostToDevice);
+}
+
+void initHighInverseFilter_2D() {
+    int64 highInverseFilterLenght = 9;
+    int64 num_bytes = highInverseFilterLenght * sizeof(double);
+
+    host_high_inverse_filter_array_2D = (double*)malloc(num_bytes);
+
+    filter2D.getHighPassFilter(host_high_inverse_filter_array_2D);
+    cudaMalloc((void**)&device_high_inverse_filter_array_2D, num_bytes);
+
+    cudaMemcpy(device_high_inverse_filter_array_2D, host_high_inverse_filter_array_2D, num_bytes, cudaMemcpyHostToDevice);
 }
 
 void initOutput_2D() {
@@ -148,12 +181,22 @@ void test2D() {
     auto endDecompose = std::chrono::system_clock::now();
     std::chrono::duration<double> diff = endDecompose-startDecompose;
     std::cout<< diff.count() << " s\n";
-    transferMemoryBack_2D();
+    //transferMemoryBack_2D();
 
-    do 
-    {
-        std::cout << '\n' << "Press a key to continue...";
-    } while (std::cin.get() != '\n');
+    //do 
+    //{
+        //std::cout << '\n' << "Press a key to continue...";
+    //} while (std::cin.get() != '\n');
 
-    printResult_2D();
+    //printResult_2D();
+    int levelUncompress = 1;
+    //iDwt2D_Horizontal(levels, levelUncompress,
+                      //device_output_array_2D, 
+                      //imageMeta,
+                      //double * deviceILowFilter,
+                      //double * deviceIHighFilter,
+                      //int64 filterLength,
+                      //struct ImageMeta & outputImageMeta,
+                      //double * deviceOutputCoefficients,
+                      //double * deviceTmpMemory) {
 }
