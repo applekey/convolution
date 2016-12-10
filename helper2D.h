@@ -332,7 +332,7 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
     sum += highFilter[8] * valsHigh[8]; 
 
     int64 outputIndex = (yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + xIndexLocal); 
-    reconstructedSignal[outputIndex] = sum;
+    reconstructedSignal[outputIndex] = 1.0;
 }
 
 void iDwt2D_Horizontal(MyVector & L, int levelsToCompressUncompress,
@@ -354,7 +354,7 @@ void iDwt2D_Horizontal(MyVector & L, int levelsToCompressUncompress,
     }
 
     for(int level = 0; level < levelsToCompressUncompress; level++) {
-        int64 totalNumElements = currentImageMeta.xEnd *  currentImageMeta.yEnd;
+        int64 totalNumElements = currentImageMeta.xEnd *  currentImageMeta.yEnd  * 2;
         int threads;
         dim3 blocks;
         calculateBlockSize(totalNumElements, threads, blocks);
