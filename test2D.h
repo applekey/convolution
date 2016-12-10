@@ -26,6 +26,10 @@ double * device_low_inverse_filter_array_2D = 0;
 double * host_high_inverse_filter_array_2D = 0;
 double * device_high_inverse_filter_array_2D = 0;
 
+//reconstructed signal
+double * host_reconstructed_signal_array_2D = 0;
+double * device_reconstructed_signal_array_2D = 0;
+
 //tmp memory
 double * deviceTmpMemory = 0;
 
@@ -53,6 +57,17 @@ void initSignal2D() {
         /*host_signal_array[i] = 1.0 * sin((double)i /100.0) * 100.0;*/
         host_signal_array_2D[i] = 1.0;
     }
+}
+
+void initReconstructedSignal2D() {
+
+    int64 signalLength = get1DSignalLength();
+    int64 num_bytes = signalLength * sizeof(double);
+    assert(num_bytes != 0);
+
+    host_reconstructed_signal_array_2D = (double*)malloc(num_bytes);
+
+    cudaError_t err = cudaMalloc((void**)&device_reconstructed_signal_array_2D, num_bytes);
 }
 
 void copyInputSignal2D() {
@@ -139,7 +154,13 @@ void transferMemoryBack_2D() {
     cudaMemcpy(host_output_array_2D, device_output_array_2D, num_bytes, cudaMemcpyDeviceToHost);
 }
 
-void printResult_2D() {
+void transferReconstructedSignalBack_2d() {
+    int64 num_bytes = get1DSignalLength() * sizeof(double);
+    assert(num_bytes != 0);
+    cudaMemcpy(host_reconstructed_signal_array_2D, device_reconstructed_signal_array_2D, num_bytes, cudaMemcpyDeviceToHost);
+}
+
+void printResult_2D(double * signal) {
     int64 signalLenght = get1DSignalLength();
     int64 stride = SIGNAL_LENGTH_2D;
     
@@ -147,7 +168,7 @@ void printResult_2D() {
         if(i % stride == 0) {
             std::cerr<<std::endl;
         }
-        std::cerr<<host_output_array_2D[i]<<" ";
+        std::cerr<<signal[i]<<" ";
     }
     std::cerr<<std::endl;
 }
@@ -157,10 +178,13 @@ void test2D() {
     filter2D.constructFilters();
     initLowFilter_2D();
     initHighFilter_2D();
+    initLowInverseFilter_2D();
+    initHighInverseFilter_2D();
     initOutput_2D();
 
     initSignal2D();
     copyInputSignal2D();
+    initReconstructedSignal2D();
     initDeviceTmpMemory();
     //decompose the signal 
     MyVector levels;
@@ -189,14 +213,16 @@ void test2D() {
     //} while (std::cin.get() != '\n');
 
     //printResult_2D();
+
     int levelUncompress = 1;
-    //iDwt2D_Horizontal(levels, levelUncompress,
-                      //device_output_array_2D, 
-                      //imageMeta,
-                      //double * deviceILowFilter,
-                      //double * deviceIHighFilter,
-                      //int64 filterLength,
-                      //struct ImageMeta & outputImageMeta,
-                      //double * deviceOutputCoefficients,
-                      //double * deviceTmpMemory) {
+    iDwt2D_Horizontal(levels, levelUncompress,
+                      device_output_array_2D, 
+                      imageMeta,
+                      device_low_inverse_filter_array_2D,
+                      device_high_inverse_filter_array_2D,
+                      9,
+                      device_reconstructed_signal_array_2D,
+                      deviceTmpMemory);
+    transferReconstructedSignalBack_2d();
+    printResult_2D(host_reconstructed_signal_array_2D);
 }

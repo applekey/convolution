@@ -341,7 +341,6 @@ void iDwt2D_Horizontal(MyVector & L, int levelsToCompressUncompress,
                       double * deviceILowFilter,
                       double * deviceIHighFilter,
                       int64 filterLength,
-                      struct ImageMeta & outputImageMeta,
                       double * deviceOutputCoefficients,
                       double * deviceTmpMemory) {
 
