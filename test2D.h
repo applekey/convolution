@@ -2,6 +2,7 @@
 
 //#define SIGNAL_LENGTH_2D 16384 
 #define SIGNAL_LENGTH_2D 32
+//#define SIGNAL_LENGTH_2D 16
 #define COMPRESSION_LEVELS_2D 1
 
 #include "helper2D.h"
@@ -223,6 +224,7 @@ void test2D() {
                       9,
                       device_reconstructed_signal_array_2D,
                       deviceTmpMemory);
+    return;
     transferReconstructedSignalBack_2d();
     printResult_2D(host_reconstructed_signal_array_2D);
 }
