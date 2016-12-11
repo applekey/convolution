@@ -134,6 +134,7 @@ __global__ void inverseConvolve(double * lowReconstructFilter, double * highReco
     highIndex = filterLength - 2;
     //sum low
     int64 lowCoefficientIndex = (index + 1) / 2;
+
     while(lowIndex > -1) {
         sum += lowReconstructFilter[lowIndex] * lowCoefficients[lowCoefficientIndex];
         lowIndex -= 2;

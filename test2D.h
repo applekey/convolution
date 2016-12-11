@@ -1,7 +1,7 @@
 #include "waveletFilter.h"
 
 //#define SIGNAL_LENGTH_2D 16384 
-#define SIGNAL_LENGTH_2D 16
+#define SIGNAL_LENGTH_2D 32
 #define COMPRESSION_LEVELS_2D 1
 
 #include "helper2D.h"
@@ -178,13 +178,13 @@ void test2D() {
     filter2D.constructFilters();
     initLowFilter_2D();
     initHighFilter_2D();
-    //initLowInverseFilter_2D();
-    //initHighInverseFilter_2D();
+    initLowInverseFilter_2D();
+    initHighInverseFilter_2D();
     initOutput_2D();
 
     initSignal2D();
     copyInputSignal2D();
-    //initReconstructedSignal2D();
+    initReconstructedSignal2D();
     initDeviceTmpMemory();
     //decompose the signal 
     MyVector levels;
