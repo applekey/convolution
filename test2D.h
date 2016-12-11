@@ -198,7 +198,7 @@ void test2D() {
     imageMeta.yEnd = SIGNAL_LENGTH_2D;
 
     auto startDecompose = std::chrono::system_clock::now();
-    dwt2D_Horizontal(levels, COMPRESSION_LEVELS_2D, device_signal_array_2D,
+    dwt2D(levels, COMPRESSION_LEVELS_2D, device_signal_array_2D,
                     imageMeta, device_low_filter_array_2D,
                     device_high_filter_array_2D, 9, imageMeta,
                     device_output_array_2D, deviceTmpMemory);
@@ -215,7 +215,7 @@ void test2D() {
     printResult_2D(host_output_array_2D);
 
     int levelUncompress = 1;
-    iDwt2D_Horizontal(levels, levelUncompress,
+    iDwt2D(levels, levelUncompress,
                       device_output_array_2D, 
                       imageMeta,
                       device_low_inverse_filter_array_2D,
