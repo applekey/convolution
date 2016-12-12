@@ -1,8 +1,8 @@
 #include "waveletFilter.h"
 
 //#define SIGNAL_LENGTH_2D 16384 
-#define SIGNAL_LENGTH_2D 32
-//#define SIGNAL_LENGTH_2D 16
+//#define SIGNAL_LENGTH_2D 32
+#define SIGNAL_LENGTH_2D 16
 #define COMPRESSION_LEVELS_2D 1
 
 #include "helper2D.h"
@@ -138,6 +138,14 @@ void initOutput_2D() {
     if(err != cudaSuccess) {
         printf("The error is %s", cudaGetErrorString(err));
     }
+
+    double * tmp  = (double*)malloc(num_bytes);
+
+    for(int64 i = 0; i < get1DSignalLength(); i++) {
+        tmp[i] = 0.0;
+    }
+    cudaMemcpy(device_output_array_2D, tmp, num_bytes, cudaMemcpyHostToDevice);
+    free(tmp);
 }
 
 void initDeviceTmpMemory() {
@@ -224,7 +232,6 @@ void test2D() {
                       9,
                       device_reconstructed_signal_array_2D,
                       deviceTmpMemory);
-    return;
     transferReconstructedSignalBack_2d();
     printResult_2D(host_reconstructed_signal_array_2D);
 }

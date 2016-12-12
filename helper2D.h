@@ -63,7 +63,7 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
     int filledR = 0;
 
     for(int i =0; i < fillRight; i++) {
-        vals[9 - i] = 1.0;
+        vals[8 - i] = 1.0;
         filledR += 1;
     } 
 
@@ -125,7 +125,7 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
     int fillRight = yIndex - (height - filterSideWidth) + 1;
     int filledR = 0;
     for(int i =0; i< fillRight; i++) {
-        vals[9 - i] = 1.0;
+        vals[8 - i] = 1.0;
         filledR += 1;
     } 
 
@@ -148,9 +148,9 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
     sum += vals[5]* filter[5];
     //2
     sum += vals[6]* filter[6];
-    //3
+    ////3
     sum += vals[7]* filter[7];
-    //4
+    ////4
     sum += vals[8]* filter[8];
     
     output[(yIndex/2 + offset)* stride + xIndex] = sum;
@@ -180,7 +180,7 @@ void dwt2D(MyVector & L, int levelsToCompress,
     int blockWidth = inputImageMeta.imageWidth; 
     int blockHeight = inputImageMeta.imageHeight; 
 
-    bool isHorizontal = false;
+    bool isHorizontal = true;
         
     for(int i = 0; i < levelsToCompress; i++) {
 
@@ -282,14 +282,14 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
     int fillRight = lowCoefficientIndex - (highCoefficientOffsetY - filterSideWidth - 1);
     int filledR = 0;
     for(int i =0; i< fillRight; i++) {
-        valsLow[9 - i] = inputSignal[(inputImageMeta.yStart + highCoefficientOffsetY -1) * stride 
+        valsLow[8 - i] = inputSignal[(inputImageMeta.yStart + highCoefficientOffsetY -1) * stride 
            + (inputImageMeta.xStart + xIndexLocal) ]; 
         //valsLow[9 - i] = 1.0;
         filledR += 1;
     } 
 
     for(int i = filledL; i < 9 - filledR; i++) {
-        valsLow[i] = inputSignal[(inputImageMeta.yStart + lowCoefficientIndex ) * stride 
+        valsLow[i] = inputSignal[(inputImageMeta.yStart + lowCoefficientIndex) * stride 
            + (inputImageMeta.xStart + xIndexLocal) ]; 
     }
     
@@ -324,9 +324,8 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
     fillRight = highCoefficientIndex - (highCoefficientOffsetY - filterSideWidth - 1);
     filledR = 0;
     for(int i =0; i< fillRight; i++) {
-        valsHigh[9-i] = inputSignal[(inputImageMeta.yStart + 2 * highCoefficientOffsetY -1) * stride 
+        valsHigh[8-i] = inputSignal[(inputImageMeta.yStart + 2 * highCoefficientOffsetY -1) * stride 
            + (inputImageMeta.xStart + xIndexLocal) ]; 
-        //valsHigh[9 - i] = 1.0;
         filledR += 1;
     } 
 
@@ -383,14 +382,14 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
     int filledL = 0;
 
     for(int i =0; i< fillLeft; i++) {
-        valsLow[i] = 1.0;
+        valsLow[i] = inputSignal[(yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart) ]; 
         filledL += 1;
     } 
 
     int fillRight = lowCoefficientIndex - (highCoefficientOffsetX - filterSideWidth - 1);
     int filledR = 0;
     for(int i =0; i< fillRight; i++) {
-        valsLow[9 - i] = 1.0;
+        valsLow[8 - i] = inputSignal[(yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + highCoefficientOffsetX -1 ) ]; 
         filledR += 1;
     } 
 
@@ -420,14 +419,14 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
     filledL = 0;
 
     for(int i =0; i< fillLeft; i++) {
-        valsHigh[i] = 1.0;
+        valsHigh[i] = inputSignal[(yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + highCoefficientOffsetX ) ]; 
         filledL += 1;
     } 
 
     fillRight = highCoefficientIndex - (highCoefficientOffsetX - filterSideWidth - 1);
     filledR = 0;
     for(int i =0; i< fillRight; i++) {
-        valsHigh[9 - i] = 1.0;
+        valsHigh[8 - i] = inputSignal[(yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + 2 * highCoefficientOffsetX - 1) ]; 
         filledR += 1;
     } 
 
@@ -458,13 +457,13 @@ void iDwt2D(MyVector & L, int levelsToCompressUncompress,
                       double * deviceOutputCoefficients,
                       double * deviceTmpMemory) {
 
-    bool isHorizontal = false;
+    bool isHorizontal = true;
     //calculate current image meta 
     struct ImageMeta currentImageMeta = inputImageMeta;
 
     for(int level = 0; level < levelsToCompressUncompress; level++) {
-        //currentImageMeta.xEnd /= 2;
-        currentImageMeta.yEnd /= 2;
+        currentImageMeta.xEnd /= 2;
+        //currentImageMeta.yEnd /= 2;
     }
 
     for(int level = 0; level < levelsToCompressUncompress; level++) {
