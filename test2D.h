@@ -1,6 +1,7 @@
 #include "waveletFilter.h"
 
 //#define SIGNAL_LENGTH_2D 16384 
+//#define SIGNAL_LENGTH_2D 64
 //#define SIGNAL_LENGTH_2D 32
 #define SIGNAL_LENGTH_2D 16
 #define COMPRESSION_LEVELS_2D 1
