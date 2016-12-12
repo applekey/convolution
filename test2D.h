@@ -1,10 +1,10 @@
 #include "waveletFilter.h"
 
-//#define SIGNAL_LENGTH_2D 16384
+#define SIGNAL_LENGTH_2D 16384
 //#define SIGNAL_LENGTH_2D 64
-#define SIGNAL_LENGTH_2D 32
+//#define SIGNAL_LENGTH_2D 32
 //#define SIGNAL_LENGTH_2D 16
-#define COMPRESSION_LEVELS_2D 4
+#define COMPRESSION_LEVELS_2D 10 // note levels is * 2 so 1 == 2
 
 #include "helper2D.h"
 
@@ -195,7 +195,7 @@ void verifyReconstructedSignal2D() {
   bool allCorrect = true;
   std::cerr << "Verifiying Signal 2D" << std::endl;
   for (int64 i = 0 ; i < SIGNAL_LENGTH_2D * SIGNAL_LENGTH_2D; i++) {
-    if (!isCloseTo2D(host_reconstructed_signal_array_2D[i], 1, 0.01)) {
+    if (!isCloseTo2D(host_output_array_2D[i], 1, 0.01)) {
       allCorrect = false;
       std::cerr << i << std::endl;
     }
@@ -237,7 +237,7 @@ void test2D() {
   auto endDecompose = std::chrono::system_clock::now();
   std::chrono::duration<double> diff = endDecompose - startDecompose;
   std::cout << diff.count() << " s\n";
-  printResult_2D(host_output_array_2D);
+  //printResult_2D(host_output_array_2D);
 
   auto startRecompose = std::chrono::system_clock::now();
   iDwt2D(levels, COMPRESSION_LEVELS_2D,
@@ -246,14 +246,14 @@ void test2D() {
          device_low_inverse_filter_array_2D,
          device_high_inverse_filter_array_2D,
          9,
-         device_reconstructed_signal_array_2D,
+         device_output_array_2D,
          deviceTmpMemory);
 
-  transferReconstructedSignalBack_2d();
+  transferMemoryBack_2D();
   auto endRecompose = std::chrono::system_clock::now();
   diff = endRecompose - startRecompose;
   std::cout << diff.count() << " s\n";
 
-  printResult_2D(host_reconstructed_signal_array_2D);
-  //verifyReconstructedSignal2D();
+  //printResult_2D(host_output_array_2D);
+  verifyReconstructedSignal2D();
 }
