@@ -2,9 +2,9 @@
 
 //#define SIGNAL_LENGTH_2D 16384
 //#define SIGNAL_LENGTH_2D 64
-#define SIGNAL_LENGTH_2D 32
-//#define SIGNAL_LENGTH_2D 16
-#define COMPRESSION_LEVELS_2D 1
+//#define SIGNAL_LENGTH_2D 32
+#define SIGNAL_LENGTH_2D 16
+#define COMPRESSION_LEVELS_2D 2
 
 #include "helper2D.h"
 
@@ -181,6 +181,26 @@ void printResult_2D(double * signal) {
     std::cerr << signal[i] << " ";
   }
   std::cerr << std::endl;
+
+/*----------------------------*/
+
+  //int64 signalLenght = get1DSignalLength();
+  //int64 stride = SIGNAL_LENGTH_2D;
+
+  //ofstream myfile;
+  //myfile.open("output.txt");
+
+
+  //for (int64 i = 0; i < signalLenght; i++) {
+    //if (i % stride == 0) {
+      //myfile << "\n";
+      ////std::cerr << std::endl;
+    //}
+    //myfile << signal[i] << ",";
+    ////std::cerr << signal[i] << " ";
+  //}
+  //myfile<<"\n";
+  //myfile.close();
 }
 
 void test2D() {
@@ -208,10 +228,12 @@ void test2D() {
   imageMeta.yEnd = SIGNAL_LENGTH_2D;
 
   auto startDecompose = std::chrono::system_clock::now();
-  dwt2D(levels, COMPRESSION_LEVELS_2D, device_signal_array_2D,
-        imageMeta, device_low_filter_array_2D,
-        device_high_filter_array_2D, 9, imageMeta,
-        device_output_array_2D, deviceTmpMemory);
+
+  struct ImageMeta compressionResultMeta = dwt2D(levels, COMPRESSION_LEVELS_2D, device_signal_array_2D,
+                                                    imageMeta, device_low_filter_array_2D,
+                                                    device_high_filter_array_2D, 9, imageMeta,
+                                                    device_output_array_2D, deviceTmpMemory);
+
   auto endDecompose = std::chrono::system_clock::now();
   std::chrono::duration<double> diff = endDecompose - startDecompose;
   std::cout << diff.count() << " s\n";
@@ -224,15 +246,17 @@ void test2D() {
 
   printResult_2D(host_output_array_2D);
 
-  int levelUncompress = 1;
-  iDwt2D(levels, levelUncompress,
+//COMPRESSION_LEVELS_2D
+  iDwt2D(levels, COMPRESSION_LEVELS_2D,
          device_output_array_2D,
-         imageMeta,
+         compressionResultMeta,
          device_low_inverse_filter_array_2D,
          device_high_inverse_filter_array_2D,
          9,
          device_reconstructed_signal_array_2D,
          deviceTmpMemory);
+
   transferReconstructedSignalBack_2d();
+
   printResult_2D(host_reconstructed_signal_array_2D);
 }

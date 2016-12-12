@@ -163,7 +163,7 @@ int64 calculateExtendedSignalLength(int64 width, int64 height, int64 filterSize,
          height * (width + filterSideSize * 2) ;
 }
 
-void dwt2D(MyVector & L, int levelsToCompress,
+struct ImageMeta dwt2D(MyVector & L, int levelsToCompress,
            double * deviceInputSignal,
            struct ImageMeta inputImageMeta,
            double * deviceLowFilter,
@@ -204,7 +204,6 @@ void dwt2D(MyVector & L, int levelsToCompress,
 
     if (isHorizontal) {
       //low filter
-      deviceTmpMemory = deviceOutputCoefficients;
       convolve2D_Horizontal <<< blocks, threads>>> (currentInputSignal, convolveImagSize,
           deviceLowFilter, filterLength,
           deviceTmpMemory, imageMetaLow, 0);
@@ -237,6 +236,7 @@ void dwt2D(MyVector & L, int levelsToCompress,
     }
     isHorizontal = !isHorizontal;
   }
+  return currentImageMeta;
 }
 /*---------------------------INVERSE-------------------------*/
 __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength,
@@ -457,23 +457,27 @@ void iDwt2D(MyVector & L, int levelsToCompressUncompress,
             double * deviceOutputCoefficients,
             double * deviceTmpMemory) {
 
-  bool isHorizontal = true;
+  bool isHorizontal = false;
   //calculate current image meta
   struct ImageMeta currentImageMeta = inputImageMeta;
 
   for (int level = 0; level < levelsToCompressUncompress; level++) {
-    currentImageMeta.xEnd /= 2;
-    //currentImageMeta.yEnd /= 2;
-  }
 
-  for (int level = 0; level < levelsToCompressUncompress; level++) {
+    if (isHorizontal) {
+        currentImageMeta.xEnd *= 2;
+    } else {
+        currentImageMeta.yEnd *= 2;
+    }
+
+    std::cerr<<currentImageMeta.xEnd<<","<<currentImageMeta.yEnd<<std::endl;
+
     int64 totalNumElements = currentImageMeta.xEnd *  currentImageMeta.yEnd  * 2;
     int threads;
     dim3 blocks;
     calculateBlockSize(totalNumElements, threads, blocks);
 
     if (isHorizontal) {
-      inverseConvolveHorizontal <<< blocks, threads>>>(deviceInputSignal, filterLength,
+      inverseConvolveHorizontal <<< blocks, threads>>>(deviceTmpMemory, filterLength,
           totalNumElements,
           deviceILowFilter, deviceIHighFilter,
           currentImageMeta,
@@ -483,8 +487,9 @@ void iDwt2D(MyVector & L, int levelsToCompressUncompress,
           totalNumElements,
           deviceILowFilter, deviceIHighFilter,
           currentImageMeta,
-          deviceOutputCoefficients);
+          deviceTmpMemory);
     }
+    isHorizontal = !isHorizontal;
   }
 
 }
