@@ -180,7 +180,7 @@ void dwt2D(MyVector & L, int levelsToCompress,
     int blockWidth = inputImageMeta.imageWidth; 
     int blockHeight = inputImageMeta.imageHeight; 
 
-    bool isHorizontal = true;
+    bool isHorizontal = false;
         
     for(int i = 0; i < levelsToCompress; i++) {
 
@@ -289,7 +289,7 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
     } 
 
     for(int i = filledL; i < 9 - filledR; i++) {
-        valsLow[i] = inputSignal[(inputImageMeta.yStart + lowCoefficientIndex) * stride 
+        valsLow[i] = inputSignal[(inputImageMeta.yStart + lowCoefficientIndex - filterSideWidth + i) * stride 
            + (inputImageMeta.xStart + xIndexLocal) ]; 
     }
     
@@ -330,7 +330,7 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
     } 
 
     for(int i = filledL; i < 9 - filledR; i++) {
-        valsHigh[i] = inputSignal[(inputImageMeta.yStart + highCoefficientIndex + highCoefficientOffsetY) * stride 
+        valsHigh[i] = inputSignal[(inputImageMeta.yStart + highCoefficientIndex + highCoefficientOffsetY - filterSideWidth + i) * stride 
            + (inputImageMeta.xStart + xIndexLocal) ]; 
     }
 
@@ -458,13 +458,13 @@ void iDwt2D(MyVector & L, int levelsToCompressUncompress,
                       double * deviceOutputCoefficients,
                       double * deviceTmpMemory) {
 
-    bool isHorizontal = true;
+    bool isHorizontal = false;
     //calculate current image meta 
     struct ImageMeta currentImageMeta = inputImageMeta;
 
     for(int level = 0; level < levelsToCompressUncompress; level++) {
-        currentImageMeta.xEnd /= 2;
-        //currentImageMeta.yEnd /= 2;
+        //currentImageMeta.xEnd /= 2;
+        currentImageMeta.yEnd /= 2;
     }
 
     for(int level = 0; level < levelsToCompressUncompress; level++) {
