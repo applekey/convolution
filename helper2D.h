@@ -253,7 +253,7 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
   int64 stride = inputImageMeta.imageWidth;
   int64 height = inputImageMeta.imageHeight;
 
-  int64 blockWidth = (inputImageMeta.xEnd - inputImageMeta.xStart);
+  int64 blockWidth = stride;//(inputImageMeta.xEnd - inputImageMeta.xStart);//???ToDo fix here
   int64 yIndexLocal = index / blockWidth;
   int64 xIndexLocal = index % blockWidth;
 
@@ -457,38 +457,40 @@ void iDwt2D(MyVector & L, int levelsToCompressUncompress,
             double * deviceOutputCoefficients,
             double * deviceTmpMemory) {
 
-  bool isHorizontal = false;
+  bool isHorizontal = true;
   //calculate current image meta
   struct ImageMeta currentImageMeta = inputImageMeta;
 
   for (int level = 0; level < levelsToCompressUncompress; level++) {
 
-    if (isHorizontal) {
-        currentImageMeta.xEnd *= 2;
-    } else {
-        currentImageMeta.yEnd *= 2;
-    }
-
     std::cerr<<currentImageMeta.xEnd<<","<<currentImageMeta.yEnd<<std::endl;
 
-    int64 totalNumElements = currentImageMeta.xEnd *  currentImageMeta.yEnd  * 2;
+    int64 totalNumElements = currentImageMeta.xEnd *  currentImageMeta.yEnd  * 4;
     int threads;
     dim3 blocks;
     calculateBlockSize(totalNumElements, threads, blocks);
 
     if (isHorizontal) {
-      inverseConvolveHorizontal <<< blocks, threads>>>(deviceTmpMemory, filterLength,
-          totalNumElements,
-          deviceILowFilter, deviceIHighFilter,
-          currentImageMeta,
-          deviceOutputCoefficients);
-    } else {
-      inverseConvolveVertical <<< blocks, threads>>>(deviceInputSignal, filterLength,
+      //inverseConvolveHorizontal <<< blocks, threads>>>(deviceTmpMemory, filterLength,
+      inverseConvolveHorizontal <<< blocks, threads>>>(deviceInputSignal, filterLength,
           totalNumElements,
           deviceILowFilter, deviceIHighFilter,
           currentImageMeta,
           deviceTmpMemory);
+    } else {
+      inverseConvolveVertical <<< blocks, threads>>>(deviceTmpMemory, filterLength,
+          totalNumElements,
+          deviceILowFilter, deviceIHighFilter,
+          currentImageMeta,
+          deviceOutputCoefficients);
     }
+
+    //if (isHorizontal) {
+        //currentImageMeta.xEnd *= 2;
+    //} else {
+        //currentImageMeta.yEnd *= 2;
+    //}
+
     isHorizontal = !isHorizontal;
   }
 

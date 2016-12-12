@@ -247,7 +247,7 @@ void test2D() {
   printResult_2D(host_output_array_2D);
 
 //COMPRESSION_LEVELS_2D
-  iDwt2D(levels, COMPRESSION_LEVELS_2D,
+  iDwt2D(levels, 2,
          device_output_array_2D,
          compressionResultMeta,
          device_low_inverse_filter_array_2D,
