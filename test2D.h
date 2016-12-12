@@ -1,9 +1,9 @@
 #include "waveletFilter.h"
 
-//#define SIGNAL_LENGTH_2D 16384
+#define SIGNAL_LENGTH_2D 16384
 //#define SIGNAL_LENGTH_2D 64
 //#define SIGNAL_LENGTH_2D 32
-#define SIGNAL_LENGTH_2D 16
+//#define SIGNAL_LENGTH_2D 16
 #define COMPRESSION_LEVELS_2D 2
 
 #include "helper2D.h"
@@ -203,6 +203,25 @@ void printResult_2D(double * signal) {
   //myfile.close();
 }
 
+
+bool isCloseTo2D(double a, double b, double epsilon) {
+  if (abs(a - b) < epsilon) {
+    return true;
+  } else {
+    return false;
+  }
+}
+void verifyReconstructedSignal2D() {
+  bool allCorrect = true;
+  std::cerr << "Verifiying Signal 2D" << std::endl;
+  for (int64 i = 0 ; i < SIGNAL_LENGTH_2D * SIGNAL_LENGTH_2D; i++) {
+    if (!isCloseTo2D(host_reconstructed_signal_array_2D[i], 1, 0.01)) {
+      allCorrect = false;
+      std::cerr << i << std::endl;
+    }
+  }
+  assert(allCorrect);
+}
 void test2D() {
   std::cerr << "Testing 2D Decompose" << std::endl;
   filter2D.constructFilters();
@@ -244,7 +263,7 @@ void test2D() {
   //std::cout << '\n' << "Press a key to continue...";
   //} while (std::cin.get() != '\n');
 
-  printResult_2D(host_output_array_2D);
+  //printResult_2D(host_output_array_2D);
 
 //COMPRESSION_LEVELS_2D
   iDwt2D(levels, 2,
@@ -257,6 +276,6 @@ void test2D() {
          deviceTmpMemory);
 
   transferReconstructedSignalBack_2d();
-
-  printResult_2D(host_reconstructed_signal_array_2D);
+  //printResult_2D(host_reconstructed_signal_array_2D);
+  verifyReconstructedSignal2D();
 }
