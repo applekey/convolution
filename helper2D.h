@@ -42,7 +42,7 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
   if (index >= signalLength) {
     return;
   }
-
+  int64 imageWidth = inputImageMeta.imageWidth;
   int64 stride = inputImageMeta.xEnd - inputImageMeta.xStart;
 
   int64 yIndex = index * 2 / stride;
@@ -55,7 +55,7 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
   int fillLeft = filterSideWidth - xIndex;
   int filledL = 0;
   for (int i = 0; i < fillLeft; i++) {
-    vals[i]= inputSignal[yIndex * stride];
+    vals[i]= inputSignal[yIndex * imageWidth];
     filledL += 1;
   }
 
@@ -63,12 +63,12 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
   int filledR = 0;
 
   for (int i = 0; i < fillRight; i++) {
-    vals[8 - i]= inputSignal[yIndex * stride + inputImageMeta.xEnd - 1];
+    vals[8 - i]= inputSignal[yIndex * imageWidth + inputImageMeta.xEnd - 1];
     filledR += 1;
   }
 
   for (int i = filledL; i < 9 - filledR; i++) {
-    vals[i] = inputSignal[yIndex * stride + xIndex - filterSideWidth + i ];
+    vals[i] = inputSignal[yIndex * imageWidth + xIndex - filterSideWidth + i ];
   }
 
   double sum = 0.0;
@@ -91,7 +91,7 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
   //4
   sum += vals[8] * filter[8];
 
-  output[yIndex * stride + xIndex / 2 + offset] = sum;
+  output[yIndex * imageWidth + xIndex / 2 + offset] = sum;
 }
 
 /*---------------------------------VERT---------------------------------------*/
@@ -105,6 +105,7 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
     return;
   }
 
+  int64 imageWidth = inputImageMeta.imageWidth;
   int64 stride = inputImageMeta.xEnd - inputImageMeta.xStart;
   int64 height = inputImageMeta.yEnd - inputImageMeta.yStart;
 
@@ -125,12 +126,12 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
   int fillRight = yIndex - (height - filterSideWidth) + 1;
   int filledR = 0;
   for (int i = 0; i < fillRight; i++) {
-    vals[8 - i] = inputSignal[(height - 1) * stride + xIndex ];
+    vals[8 - i] = inputSignal[(height - 1) * imageWidth + xIndex ];
     filledR += 1;
   }
 
   for (int i = filledL; i < 9 - filledR; i++) {
-    vals[i] = inputSignal[(yIndex - filterSideWidth + i) * stride + xIndex ];
+    vals[i] = inputSignal[(yIndex - filterSideWidth + i) * imageWidth + xIndex ];
   }
 
   double sum = 0.0;
@@ -153,7 +154,7 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
   ////4
   sum += vals[8] * filter[8];
 
-  output[(yIndex / 2 + offset)* stride + xIndex] = sum;
+  output[(yIndex / 2 + offset)* imageWidth + xIndex] = sum;
 }
 
 int64 calculateExtendedSignalLength(int64 width, int64 height, int64 filterSize,
@@ -187,17 +188,9 @@ struct ImageMeta dwt2D(MyVector & L, int levelsToCompress,
     int threads;
     dim3 blocks;
     //set up output image meta
-    struct ImageMeta imageMetaHigh = outputImageMeta;
-    struct ImageMeta imageMetaLow = outputImageMeta;
+    struct ImageMeta imageMetaHigh = currentImageMeta;
+    struct ImageMeta imageMetaLow = currentImageMeta;
     int64 convolveImagSize = convolveImagSize = blockWidth * blockHeight / 2;
-
-    //if (isHorizontal) {
-      //imageMetaHigh.yStart = imageMetaHigh.yStart + blockHeight / 2;
-      //imageMetaLow.yEnd = imageMetaHigh.yStart + blockHeight / 2;
-    //} else {
-      //imageMetaHigh.xStart = imageMetaHigh.xStart + blockHeight / 2;
-      //imageMetaLow.xEnd = imageMetaHigh.xStart + blockHeight / 2;
-    //}
 
     //convolve the image
     calculateBlockSize(convolveImagSize, threads, blocks);
@@ -233,6 +226,7 @@ struct ImageMeta dwt2D(MyVector & L, int levelsToCompress,
       blockWidth = currentImageMeta.xEnd - currentImageMeta.xStart;
       blockHeight = currentImageMeta.yEnd - currentImageMeta.yStart;
       currentInputSignal = deviceOutputCoefficients;
+      std::cerr<<currentImageMeta.xEnd<<" "<<currentImageMeta.xEnd<<blockWidth/2<<" "<<blockHeight/2<<std::endl;
     }
     isHorizontal = !isHorizontal;
   }
@@ -251,9 +245,8 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
   }
 
   int64 stride = inputImageMeta.imageWidth;
-  int64 height = inputImageMeta.imageHeight;
 
-  int64 blockWidth = stride;//(inputImageMeta.xEnd - inputImageMeta.xStart);//???ToDo fix here
+  int64 blockWidth = inputImageMeta.xEnd - inputImageMeta.xStart;
   int64 yIndexLocal = index / blockWidth;
   int64 xIndexLocal = index % blockWidth;
 
@@ -359,9 +352,8 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
   }
 
   int64 stride = inputImageMeta.imageWidth;
-  int64 height = inputImageMeta.imageHeight;
 
-  int64 blockWidth = (inputImageMeta.xEnd - inputImageMeta.xStart) * 2;
+  int64 blockWidth = inputImageMeta.xEnd - inputImageMeta.xStart;
   int64 yIndexLocal = index / blockWidth;
   int64 xIndexLocal = index % blockWidth;
 
@@ -463,21 +455,27 @@ void iDwt2D(MyVector & L, int levelsToCompressUncompress,
 
   for (int level = 0; level < levelsToCompressUncompress; level++) {
 
-    std::cerr<<currentImageMeta.xEnd<<","<<currentImageMeta.yEnd<<std::endl;
-
-    int64 totalNumElements = currentImageMeta.xEnd *  currentImageMeta.yEnd  * 4;
-    int threads;
-    dim3 blocks;
-    calculateBlockSize(totalNumElements, threads, blocks);
-
     if (isHorizontal) {
-      //inverseConvolveHorizontal <<< blocks, threads>>>(deviceTmpMemory, filterLength,
+      //expand current image size
+      currentImageMeta.xEnd *= 2;
+      currentImageMeta.yEnd *= 2;
+      std::cerr<<currentImageMeta.xEnd<<","<<currentImageMeta.yEnd<<std::endl;
+
+        int64 totalNumElements = currentImageMeta.xEnd *  currentImageMeta.yEnd;
+        int threads;
+        dim3 blocks;
+        calculateBlockSize(totalNumElements, threads, blocks);
+
       inverseConvolveHorizontal <<< blocks, threads>>>(deviceInputSignal, filterLength,
           totalNumElements,
           deviceILowFilter, deviceIHighFilter,
           currentImageMeta,
           deviceTmpMemory);
     } else {
+        int64 totalNumElements = currentImageMeta.xEnd *  currentImageMeta.yEnd;
+        int threads;
+        dim3 blocks;
+        calculateBlockSize(totalNumElements, threads, blocks);
       inverseConvolveVertical <<< blocks, threads>>>(deviceTmpMemory, filterLength,
           totalNumElements,
           deviceILowFilter, deviceIHighFilter,
@@ -485,13 +483,6 @@ void iDwt2D(MyVector & L, int levelsToCompressUncompress,
           deviceOutputCoefficients);
     }
 
-    //if (isHorizontal) {
-        //currentImageMeta.xEnd *= 2;
-    //} else {
-        //currentImageMeta.yEnd *= 2;
-    //}
-
     isHorizontal = !isHorizontal;
   }
-
 }

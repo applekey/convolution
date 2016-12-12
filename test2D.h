@@ -1,10 +1,10 @@
 #include "waveletFilter.h"
 
-#define SIGNAL_LENGTH_2D 16384
+//#define SIGNAL_LENGTH_2D 16384
 //#define SIGNAL_LENGTH_2D 64
-//#define SIGNAL_LENGTH_2D 32
+#define SIGNAL_LENGTH_2D 32
 //#define SIGNAL_LENGTH_2D 16
-#define COMPRESSION_LEVELS_2D 2
+#define COMPRESSION_LEVELS_2D 4
 
 #include "helper2D.h"
 
@@ -181,26 +181,6 @@ void printResult_2D(double * signal) {
     std::cerr << signal[i] << " ";
   }
   std::cerr << std::endl;
-
-/*----------------------------*/
-
-  //int64 signalLenght = get1DSignalLength();
-  //int64 stride = SIGNAL_LENGTH_2D;
-
-  //ofstream myfile;
-  //myfile.open("output.txt");
-
-
-  //for (int64 i = 0; i < signalLenght; i++) {
-    //if (i % stride == 0) {
-      //myfile << "\n";
-      ////std::cerr << std::endl;
-    //}
-    //myfile << signal[i] << ",";
-    ////std::cerr << signal[i] << " ";
-  //}
-  //myfile<<"\n";
-  //myfile.close();
 }
 
 
@@ -253,20 +233,14 @@ void test2D() {
                                                     device_high_filter_array_2D, 9, imageMeta,
                                                     device_output_array_2D, deviceTmpMemory);
 
+  transferMemoryBack_2D();
   auto endDecompose = std::chrono::system_clock::now();
   std::chrono::duration<double> diff = endDecompose - startDecompose;
   std::cout << diff.count() << " s\n";
-  transferMemoryBack_2D();
+  printResult_2D(host_output_array_2D);
 
-  //do
-  //{
-  //std::cout << '\n' << "Press a key to continue...";
-  //} while (std::cin.get() != '\n');
-
-  //printResult_2D(host_output_array_2D);
-
-//COMPRESSION_LEVELS_2D
-  iDwt2D(levels, 2,
+  auto startRecompose = std::chrono::system_clock::now();
+  iDwt2D(levels, COMPRESSION_LEVELS_2D,
          device_output_array_2D,
          compressionResultMeta,
          device_low_inverse_filter_array_2D,
@@ -276,6 +250,10 @@ void test2D() {
          deviceTmpMemory);
 
   transferReconstructedSignalBack_2d();
-  //printResult_2D(host_reconstructed_signal_array_2D);
-  verifyReconstructedSignal2D();
+  auto endRecompose = std::chrono::system_clock::now();
+  diff = endRecompose - startRecompose;
+  std::cout << diff.count() << " s\n";
+
+  printResult_2D(host_reconstructed_signal_array_2D);
+  //verifyReconstructedSignal2D();
 }
