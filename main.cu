@@ -6,6 +6,7 @@
 #include <iostream>
 #include <chrono>
 #include <cassert>
+#include <unistd.h>
 #include "test2D.h"
 
 /*--------------------------------------*/
@@ -353,6 +354,12 @@ void test1D() {
 }
 
 int main(int argc, const char * argv[]) {
+  std::cerr<<"Testing timer, should be 1 second"<<std::endl;
+  auto start = std::chrono::system_clock::now();
+  usleep(1000000);
+  auto end = std::chrono::system_clock::now();
+  std::chrono::duration<double> diff = end - start;
+  std::cout << diff.count() << " s\n";
   /*test1D();*/
   test2D();
   return 0;

@@ -233,8 +233,8 @@ void test2D() {
                                                     device_high_filter_array_2D, 9, imageMeta,
                                                     device_output_array_2D, deviceTmpMemory);
 
-  transferMemoryBack_2D();
   auto endDecompose = std::chrono::system_clock::now();
+  transferMemoryBack_2D();
   std::chrono::duration<double> diff = endDecompose - startDecompose;
   std::cout << diff.count() << " s\n";
   //printResult_2D(host_output_array_2D);
@@ -249,8 +249,8 @@ void test2D() {
          device_output_array_2D,
          deviceTmpMemory);
 
-  transferMemoryBack_2D();
   auto endRecompose = std::chrono::system_clock::now();
+  transferMemoryBack_2D();
   diff = endRecompose - startRecompose;
   std::cout << diff.count() << " s\n";
 

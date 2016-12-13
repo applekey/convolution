@@ -226,7 +226,6 @@ struct ImageMeta dwt2D(MyVector & L, int levelsToCompress,
       blockWidth = currentImageMeta.xEnd - currentImageMeta.xStart;
       blockHeight = currentImageMeta.yEnd - currentImageMeta.yStart;
       currentInputSignal = deviceOutputCoefficients;
-      std::cerr<<currentImageMeta.xEnd<<" "<<currentImageMeta.xEnd<<blockWidth/2<<" "<<blockHeight/2<<std::endl;
     }
     isHorizontal = !isHorizontal;
   }
@@ -459,7 +458,6 @@ void iDwt2D(MyVector & L, int levelsToCompressUncompress,
       //expand current image size
       currentImageMeta.xEnd *= 2;
       currentImageMeta.yEnd *= 2;
-      std::cerr<<currentImageMeta.xEnd<<","<<currentImageMeta.yEnd<<std::endl;
 
         int64 totalNumElements = currentImageMeta.xEnd *  currentImageMeta.yEnd;
         int threads;
