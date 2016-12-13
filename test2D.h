@@ -244,7 +244,9 @@ void test2D(int64 signalLength2D, int64 compressionLevels) {
     auto endDecompose = std::chrono::system_clock::now();
     transferMemoryBack_2D();
     std::chrono::duration<double> diff = endDecompose - startDecompose;
+    std::cerr<<std::endl;
     std::cout << diff.count() << " 2D Compression Total s\n";
+    std::cerr<<std::endl;
     //printResult_2D(host_output_array_2D);
 
     auto startRecompose = std::chrono::system_clock::now();
@@ -260,7 +262,10 @@ void test2D(int64 signalLength2D, int64 compressionLevels) {
     auto endRecompose = std::chrono::system_clock::now();
     transferMemoryBack_2D();
     diff = endRecompose - startRecompose;
+
+    std::cerr<<std::endl;
     std::cout << diff.count() << " 2D De-Compression Total s\n";
+    std::cerr<<std::endl;
 
     //printResult_2D(host_output_array_2D);
     verifyReconstructedSignal2D();

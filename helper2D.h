@@ -183,8 +183,9 @@ struct ImageMeta dwt2D(MyVector & L, int levelsToCompress,
 
     bool isHorizontal = true;
 
-    for (int i = 0; i < levelsToCompress * 2; i++) {
+    for (int level = 0; level < levelsToCompress * 2; level++) {
 
+        auto startLocal = std::chrono::system_clock::now();
         int threads;
         dim3 blocks;
         //set up output image meta
@@ -219,6 +220,9 @@ struct ImageMeta dwt2D(MyVector & L, int levelsToCompress,
                     deviceOutputCoefficients, imageMetaHigh, blockHeight / 2);
         }
 
+        auto endLocal = std::chrono::system_clock::now();
+        std::chrono::duration<double> diff = endLocal - startLocal;
+        std::cerr<<"DWT level:"<<level/2<<" size: "<<currentImageMeta.xEnd<<", calc: "<<diff.count()<<std::endl;
         if (!isHorizontal) {
             //inputImageMeta, width and height divide by 2
             currentImageMeta.xEnd /= 2;
@@ -228,6 +232,7 @@ struct ImageMeta dwt2D(MyVector & L, int levelsToCompress,
             currentInputSignal = deviceOutputCoefficients;
         }
         isHorizontal = !isHorizontal;
+        
     }
     return currentImageMeta;
 }
@@ -453,6 +458,8 @@ void iDwt2D(MyVector & L, int levelsToCompressUncompress,
     struct ImageMeta currentImageMeta = inputImageMeta;
 
     for (int level = 0; level < levelsToCompressUncompress * 2; level++) {
+    
+        auto startLocal = std::chrono::system_clock::now();
 
         if (isHorizontal) {
             //expand current image size
@@ -480,6 +487,10 @@ void iDwt2D(MyVector & L, int levelsToCompressUncompress,
                     currentImageMeta,
                     deviceOutputCoefficients);
         }
+
+        auto endLocal = std::chrono::system_clock::now();
+        std::chrono::duration<double> diff = endLocal - startLocal;
+        std::cerr<<"DWT-I level: "<<level/2<<" size: "<<currentImageMeta.xEnd<<", calc: "<<diff.count()<<std::endl;
 
         isHorizontal = !isHorizontal;
     }
