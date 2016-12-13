@@ -55,12 +55,13 @@ __device__ int64 calculateIndex() {
 
 __global__ void convolveWavelet(double * filter, int64 filterLength,
                                 double * inputSignal, int64 signalLength,
-                                double * output, int64 outputOffset) {
+                                double * output, int64 outputOffset, int64 highOffset) {
     int64 index = calculateIndex();
     if (index >= signalLength) {
         return;
     }
-    int64 inputIndex = index * 2 + (filterLength / 2);
+    int64 inputIndex = index * 2 + (filterLength / 2) + highOffset;
+
     // load into shared memory
     //__shared__ double s[1024 + 8]; //max per
     //s[threadIdx.x] = inputSignal[inputIndex];
@@ -300,12 +301,12 @@ void dwt(MyVector & L, int levelsToCompress,
         calculateBlockSize(block_size, threads, blocks);
         convolveWavelet <<< blocks, threads>>>(deviceLowFilter, filterLength,
                                                deviceLowCoefficientMemory, inputSignalExtendedLength,
-                                               deviceOutputCoefficients, lowCoeffOffset);
+                                               deviceOutputCoefficients, lowCoeffOffset, 0);
 
         ////convolve high filters
         convolveWavelet <<< blocks, threads>>>(deviceHighFilter, filterLength,
                                                deviceLowCoefficientMemory, inputSignalExtendedLength,
-                                               deviceOutputCoefficients, currentHighCoefficientOffset);
+                                               deviceOutputCoefficients, currentHighCoefficientOffset, 1);
 
 
         currentSignalLength /= 2;

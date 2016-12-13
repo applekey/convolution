@@ -378,15 +378,17 @@ int main(int argc, const char * argv[]) {
     //scrub input
     verifyTimer();
 
-    if(argc != 3) {
-        std::cerr<<"incorrect args, example is ./wave 16384 3"<<std::endl;
+    if(argc != 4) {
+        std::cerr<<"incorrect args, example is ./wave 16384 3 1, args are signal size, level of compression, test number"<<std::endl;
         return;
     }
 
     int N = atoi(argv[1]);
     int levels = atoi(argv[2]);
+    int test = atoi(argv[3]);
     assert(N > 0);
     assert(levels > 0);
+    assert(test > 0);
 
     if(!isPowerOfTwo(N)) {
         std::cerr<<"N,"<<N<<" is not a power of 2"<<std::endl;
@@ -397,7 +399,10 @@ int main(int argc, const char * argv[]) {
     SIGNAL_LENGTH = N;
     COMPRESSION_LEVELS = levels;
     
-    /*test1D();*/
-    test2D(SIGNAL_LENGTH, COMPRESSION_LEVELS);
+    if(test == 1) {
+        test1D();
+    } else if(test == 2) {
+        test2D(SIGNAL_LENGTH, COMPRESSION_LEVELS);
+    }
     return 0;
 }

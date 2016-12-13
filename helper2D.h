@@ -36,7 +36,7 @@ __device__ int64 translateToRealIndex(struct ImageMeta inputSize, int64 index,
 /*------------------------------------------------------HORIZONTAL------------------------------*/
 __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
                                       double * filter, int filterLength,
-                                      double * output, struct ImageMeta inputImageMeta, int64 offset) {
+                                      double * output, struct ImageMeta inputImageMeta, int64 offset, int64 highOffset) {
     int64 index = calculateIndex();
 
     if (index >= signalLength) {
@@ -45,8 +45,8 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
     int64 imageWidth = inputImageMeta.imageWidth;
     int64 stride = inputImageMeta.xEnd - inputImageMeta.xStart;
 
-    int64 yIndex = index * 2 / stride;
-    int64 xIndex = index * 2 % stride;
+    int64 yIndex = (index * 2) / stride;
+    int64 xIndex = (index * 2) % stride + highOffset;
 
     int64 filterSideWidth = filterLength / 2;
 
@@ -97,7 +97,7 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
 /*---------------------------------VERT---------------------------------------*/
 __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
                                     double * filter, int filterLength,
-                                    double * output, struct ImageMeta inputImageMeta, int64 offset) {
+                                    double * output, struct ImageMeta inputImageMeta, int64 offset, int64 highOffset) {
     int64 origIndex = calculateIndex();
     int64 index = origIndex;
 
@@ -109,7 +109,7 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
     int64 stride = inputImageMeta.xEnd - inputImageMeta.xStart;
     int64 height = inputImageMeta.yEnd - inputImageMeta.yStart;
 
-    int64 yIndex = index / stride * 2;
+    int64 yIndex = index / stride * 2 + highOffset;
     int64 xIndex = index % stride;
 
     int64 filterSideWidth = filterLength / 2;
@@ -200,24 +200,24 @@ struct ImageMeta dwt2D(MyVector & L, int levelsToCompress,
             //low filter
             convolve2D_Horizontal <<< blocks, threads>>> (currentInputSignal, convolveImagSize,
                     deviceLowFilter, filterLength,
-                    deviceTmpMemory, imageMetaLow, 0);
+                    deviceTmpMemory, imageMetaLow, 0, 0);
 
             ////high filter
             convolve2D_Horizontal <<< blocks, threads>>> (currentInputSignal, convolveImagSize,
                     deviceHighFilter, filterLength,
-                    deviceTmpMemory, imageMetaHigh, blockWidth / 2);
+                    deviceTmpMemory, imageMetaHigh, blockWidth / 2, 1);
 
             currentInputSignal = deviceTmpMemory;
         } else {
             //low filter
             convolve2D_Vertical <<< blocks, threads>>> (currentInputSignal, convolveImagSize,
                     deviceLowFilter, filterLength,
-                    deviceOutputCoefficients, imageMetaLow, 0);
+                    deviceOutputCoefficients, imageMetaLow, 0, 0);
 
             //high filter
             convolve2D_Vertical <<< blocks, threads>>> (currentInputSignal, convolveImagSize,
                     deviceHighFilter, filterLength,
-                    deviceOutputCoefficients, imageMetaHigh, blockHeight / 2);
+                    deviceOutputCoefficients, imageMetaHigh, blockHeight / 2, 1);
         }
 
         auto endLocal = std::chrono::system_clock::now();
