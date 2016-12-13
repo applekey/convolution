@@ -1,12 +1,14 @@
 #include "waveletFilter.h"
 
-#define SIGNAL_LENGTH_2D 16384
+//#define SIGNAL_LENGTH_2D 16384
 //#define SIGNAL_LENGTH_2D 64
 //#define SIGNAL_LENGTH_2D 32
 //#define SIGNAL_LENGTH_2D 16
-#define COMPRESSION_LEVELS_2D 10 // note levels is * 2 so 1 == 2
-
+//#define COMPRESSION_LEVELS_2D 10 
 #include "helper2D.h"
+
+int64 SIGNAL_LENGTH_2D = 0;
+int64 COMPRESSION_LEVELS_2D = 0;
 
 //signal
 double * host_signal_array_2D = 0;
@@ -191,6 +193,7 @@ bool isCloseTo2D(double a, double b, double epsilon) {
         return false;
     }
 }
+
 void verifyReconstructedSignal2D() {
     bool allCorrect = true;
     std::cerr << "Verifiying Signal 2D" << std::endl;
@@ -202,8 +205,13 @@ void verifyReconstructedSignal2D() {
     }
     assert(allCorrect);
 }
-void test2D() {
+
+void test2D(int64 signalLength2D, int64 compressionLevels) {
     std::cerr << "Testing 2D Decompose" << std::endl;
+
+    SIGNAL_LENGTH_2D = signalLength2D;
+    COMPRESSION_LEVELS_2D = compressionLevels;
+
     filter2D.constructFilters();
     initLowFilter_2D();
     initHighFilter_2D();
@@ -236,7 +244,7 @@ void test2D() {
     auto endDecompose = std::chrono::system_clock::now();
     transferMemoryBack_2D();
     std::chrono::duration<double> diff = endDecompose - startDecompose;
-    std::cout << diff.count() << " s\n";
+    std::cout << diff.count() << " 2D Compression Total s\n";
     //printResult_2D(host_output_array_2D);
 
     auto startRecompose = std::chrono::system_clock::now();
@@ -252,7 +260,7 @@ void test2D() {
     auto endRecompose = std::chrono::system_clock::now();
     transferMemoryBack_2D();
     diff = endRecompose - startRecompose;
-    std::cout << diff.count() << " s\n";
+    std::cout << diff.count() << " 2D De-Compression Total s\n";
 
     //printResult_2D(host_output_array_2D);
     verifyReconstructedSignal2D();

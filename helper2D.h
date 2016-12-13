@@ -183,7 +183,7 @@ struct ImageMeta dwt2D(MyVector & L, int levelsToCompress,
 
     bool isHorizontal = true;
 
-    for (int i = 0; i < levelsToCompress; i++) {
+    for (int i = 0; i < levelsToCompress * 2; i++) {
 
         int threads;
         dim3 blocks;
@@ -452,7 +452,7 @@ void iDwt2D(MyVector & L, int levelsToCompressUncompress,
     //calculate current image meta
     struct ImageMeta currentImageMeta = inputImageMeta;
 
-    for (int level = 0; level < levelsToCompressUncompress; level++) {
+    for (int level = 0; level < levelsToCompressUncompress * 2; level++) {
 
         if (isHorizontal) {
             //expand current image size

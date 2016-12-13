@@ -13,16 +13,19 @@
 // All the code below is to test 1D signal,
 // the code to test 2D is in test2D.h
 /*--------------------------------------*/
-#define SIGNAL_LENGTH 134217728
+/*#define SIGNAL_LENGTH 134217728*/
 /*#define SIGNAL_LENGTH 67108864 */
 /*#define SIGNAL_LENGTH 33554432*/
 /*#define SIGNAL_LENGTH 16777216 */
 /*#define SIGNAL_LENGTH 1048576 */
 /*#define SIGNAL_LENGTH 524288 */
 /*#define SIGNAL_LENGTH  32 */
-#define COMPRESSION_LEVELS 1
+/*#define COMPRESSION_LEVELS 1*/
 
 using namespace std;
+
+int64 SIGNAL_LENGTH = 0;
+int64 COMPRESSION_LEVELS = 0;
 
 //signal
 double * host_signal_array = 0;
@@ -306,7 +309,7 @@ void test1D() {
     transferMemoryBack(outputLength);
     auto endDecompose = std::chrono::system_clock::now();
     std::chrono::duration<double> diff = endDecompose - startDecompose;
-    std::cout << diff.count() << " s\n";
+    std::cout << diff.count() << "  1D Compression Total s\n";
 
     cudaFree(tmpMemoryDWT);
     /*printOutputCoefficients(host_output_array, coefficientIndicies);*/
@@ -342,7 +345,7 @@ void test1D() {
     transferReconstructedMemoryBack(SIGNAL_LENGTH);
     auto endReconstruct = std::chrono::system_clock::now();
     diff = endReconstruct - startReconstruct;
-    std::cout << diff.count() << " s\n";
+    std::cout << diff.count() << "  1D De-Compression Total s\n";
     verifyReconstructedSignal();
     /*printReconstructedSignal();*/
 
@@ -353,14 +356,40 @@ void test1D() {
     freeMemory();
 }
 
-int main(int argc, const char * argv[]) {
+void verifyTimer() {
     std::cerr<<"Testing timer, should be 1 second"<<std::endl;
     auto start = std::chrono::system_clock::now();
     usleep(1000000);
     auto end = std::chrono::system_clock::now();
     std::chrono::duration<double> diff = end - start;
     std::cout << diff.count() << " s\n";
+}
+
+int isPowerOfTwo (unsigned int x)
+{
+ while (((x % 2) == 0) && x > 1) /* While x is even and > 1 */
+   x /= 2;
+ return (x == 1);
+}
+
+int main(int argc, const char * argv[]) {
+    //scrub input
+    verifyTimer();
+    int N = atoi(argv[1]);
+    int levels = atoi(argv[2]);
+    assert(N > 0);
+    assert(levels > 0);
+
+    if(!isPowerOfTwo(N)) {
+        std::cerr<<"N,"<<N<<" is not a power of 2"<<std::endl;
+        return;
+    }
+
+    std::cerr<<"N is: "<<N<<" levels is: "<<levels<<std::endl;
+    SIGNAL_LENGTH = N;
+    COMPRESSION_LEVELS = levels;
+    
     /*test1D();*/
-    test2D();
+    test2D(SIGNAL_LENGTH, COMPRESSION_LEVELS);
     return 0;
 }
