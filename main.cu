@@ -13,15 +13,6 @@
 // All the code below is to test 1D signal,
 // the code to test 2D is in test2D.h
 /*--------------------------------------*/
-/*#define SIGNAL_LENGTH 134217728*/
-/*#define SIGNAL_LENGTH 67108864 */
-/*#define SIGNAL_LENGTH 33554432*/
-/*#define SIGNAL_LENGTH 16777216 */
-/*#define SIGNAL_LENGTH 1048576 */
-/*#define SIGNAL_LENGTH 524288 */
-/*#define SIGNAL_LENGTH  32 */
-/*#define COMPRESSION_LEVELS 1*/
-
 using namespace std;
 
 int64 SIGNAL_LENGTH = 0;
@@ -391,6 +382,10 @@ int main(int argc, const char * argv[]) {
     assert(N > 0);
     assert(levels > 0);
     assert(test > 0);
+
+#if defined SHARED_MEMORY
+    std::cerr<<"Running with shared memory optimization"<<std::endl;
+#endif
 
     if(!isPowerOfTwo(N)) {
         std::cerr<<"N,"<<N<<" is not a power of 2"<<std::endl;

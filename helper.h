@@ -62,31 +62,35 @@ __global__ void convolveWavelet(double * filter, int64 filterLength,
     }
     int64 inputIndex = index * 2 + (filterLength / 2) + highOffset;
 
+#if defined SHARED_MEMORY
     // load into shared memory
-    //__shared__ double s[1024 + 8]; //max per
-    //s[threadIdx.x] = inputSignal[inputIndex];
+    __shared__ double s[1024 + 8]; //max per
+    s[threadIdx.x] = inputSignal[inputIndex - (filterLength / 2)];
+    //last one
+    if(threadIdx.x == 1023) {
+        s[1024] = inputSignal[inputIndex - (filterLength / 2) + 1];
+        s[1025] = inputSignal[inputIndex - (filterLength / 2) + 2];
+        s[1026] = inputSignal[inputIndex - (filterLength / 2) + 3];
+        s[1027] = inputSignal[inputIndex - (filterLength / 2) + 4];
+        s[1028] = inputSignal[inputIndex - (filterLength / 2) + 5];
+        s[1029] = inputSignal[inputIndex - (filterLength / 2) + 6];
+        s[1030] = inputSignal[inputIndex - (filterLength / 2) + 7];
+        s[1031] = inputSignal[inputIndex - (filterLength / 2) + 8];
+        s[1032] = inputSignal[inputIndex - (filterLength / 2) + 9];
+    }
 
-    //if(threadIdx.x == 0) {
-    //s[1024] = 1.0;
-    //s[1025] = 1.0;
-    //s[1026] = 1.0;
-    //s[1027] = 1.0;
-    //s[1028] = 1.0;
-    //s[1029] = 1.0;
-    //s[1030] = 1.0;
-    //s[1031] = 1.0;
-    //s[1032] = 1.0;
-    //}
-
-    //__syncthreads();
-
+    __syncthreads();
+#endif
 
     double sum = 0.0;
 
     for (int64 i = 0; i < filterLength; i++) {
-        //sum += filter[i] * s[threadIdx.x + i];
 
+#if defined SHARED_MEMORY
+        sum += filter[i] * s[threadIdx.x + i];
+#else
         sum += filter[i] * inputSignal[inputIndex - (filterLength / 2) + i];
+#endif
     }
 
     output[index + outputOffset] = sum;
@@ -153,6 +157,7 @@ __global__ void inverseConvolve(double * lowReconstructFilter, double * highReco
     //write out sum
     reconstructedSignal[index] = sum;
 }
+
 void calculateBlockSize(int64 totalLength,
                         int & threads, dim3 & blocks) {
 
