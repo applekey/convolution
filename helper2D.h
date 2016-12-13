@@ -208,6 +208,7 @@ struct ImageMeta dwt2D(MyVector & L, int levelsToCompress,
                     deviceTmpMemory, imageMetaHigh, blockWidth / 2, 1);
 
             currentInputSignal = deviceTmpMemory;
+
         } else {
             //low filter
             convolve2D_Vertical <<< blocks, threads>>> (currentInputSignal, convolveImagSize,
@@ -222,7 +223,7 @@ struct ImageMeta dwt2D(MyVector & L, int levelsToCompress,
 
         auto endLocal = std::chrono::system_clock::now();
         std::chrono::duration<double> diff = endLocal - startLocal;
-        std::cerr<<"DWT level:"<<level/2<<" size: "<<currentImageMeta.xEnd<<", calc: "<<diff.count()<<std::endl;
+        //std::cerr<<"DWT level:"<<level/2<<" size: "<<currentImageMeta.xEnd<<", calc: "<<diff.count()<<std::endl;
         if (!isHorizontal) {
             //inputImageMeta, width and height divide by 2
             currentImageMeta.xEnd /= 2;
@@ -487,10 +488,11 @@ void iDwt2D(MyVector & L, int levelsToCompressUncompress,
                     currentImageMeta,
                     deviceOutputCoefficients);
         }
+        //cudaDeviceSynchronize();
 
         auto endLocal = std::chrono::system_clock::now();
         std::chrono::duration<double> diff = endLocal - startLocal;
-        std::cerr<<"DWT-I level: "<<level/2<<" size: "<<currentImageMeta.xEnd<<", calc: "<<diff.count()<<std::endl;
+        //std::cerr<<"DWT-I level: "<<level/2<<" size: "<<currentImageMeta.xEnd<<", calc: "<<diff.count()<<std::endl;
 
         isHorizontal = !isHorizontal;
     }

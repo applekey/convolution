@@ -297,9 +297,9 @@ void test1D() {
     int64 extendedSignalLength = SIGNAL_LENGTH + (SIGNAL_LENGTH / 2 ) * 2;
     double * tmpMemoryDWT = initTmpCoefficientMemory(extendedSignalLength);
 
+    copyInputSignal();
     auto startDecompose = std::chrono::system_clock::now();
     /*-------------------COMPRESS THE SIGNAL---------------------*/
-    copyInputSignal();
     //run filter
     dwt(coefficientIndicies, COMPRESSION_LEVELS,
         device_signal_array, SIGNAL_LENGTH,
@@ -308,10 +308,11 @@ void test1D() {
 
     //transfer output back
 
-    transferMemoryBack(outputLength);
+    cudaDeviceSynchronize();
     auto endDecompose = std::chrono::system_clock::now();
     std::chrono::duration<double> diff = endDecompose - startDecompose;
     std::cout << diff.count() << "  1D Compression Total s\n";
+    transferMemoryBack(outputLength);
 
     cudaFree(tmpMemoryDWT);
     /*printOutputCoefficients(host_output_array, coefficientIndicies);*/
@@ -333,21 +334,22 @@ void test1D() {
     /*}*/
 
     /*-------------------UN-COMPRESS THE SIGNAL---------------------*/
-    auto startReconstruct = std::chrono::system_clock::now();
     double * tmpMemoryDWTHigh = initTmpCoefficientMemory(SIGNAL_LENGTH);
     double * tmpMemoryDWTLow = initTmpCoefficientMemory(SIGNAL_LENGTH);
 
+    auto startReconstruct = std::chrono::system_clock::now();
     iDwt(coefficientIndicies, COMPRESSION_LEVELS,
          SIGNAL_LENGTH, 9, device_output_array + SIGNAL_LENGTH / 2,
          device_low_reconstruct_filter_array,
          device_high_reconstruct_filter_array,
          device_reconstruted_output_array,
          tmpMemoryDWTHigh, tmpMemoryDWTLow);
-
-    transferReconstructedMemoryBack(SIGNAL_LENGTH);
+    cudaDeviceSynchronize();
     auto endReconstruct = std::chrono::system_clock::now();
+
     diff = endReconstruct - startReconstruct;
     std::cout << diff.count() << "  1D De-Compression Total s\n";
+    transferReconstructedMemoryBack(SIGNAL_LENGTH);
     verifyReconstructedSignal();
     /*printReconstructedSignal();*/
 

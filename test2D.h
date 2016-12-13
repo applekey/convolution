@@ -245,6 +245,7 @@ void test2D(int64 signalLength2D, int64 compressionLevels) {
             device_high_filter_array_2D, 9, imageMeta,
             device_output_array_2D, deviceTmpMemory);
 
+    cudaDeviceSynchronize();
     auto endDecompose = std::chrono::system_clock::now();
     transferMemoryBack_2D();
     std::chrono::duration<double> diff = endDecompose - startDecompose;
@@ -263,6 +264,7 @@ void test2D(int64 signalLength2D, int64 compressionLevels) {
            device_output_array_2D,
            deviceTmpMemory);
 
+    cudaDeviceSynchronize();
     auto endRecompose = std::chrono::system_clock::now();
     transferMemoryBack_2D();
     diff = endRecompose - startRecompose;
