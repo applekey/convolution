@@ -200,10 +200,14 @@ void verifyReconstructedSignal2D() {
     for (int64 i = 0 ; i < SIGNAL_LENGTH_2D * SIGNAL_LENGTH_2D; i++) {
         if (!isCloseTo2D(host_output_array_2D[i], 1, 0.01)) {
             allCorrect = false;
-            std::cerr << i << std::endl;
         }
     }
-    assert(allCorrect);
+
+    if(allCorrect) {
+        std::cerr<<"all correct 2D"<<std::endl;
+    } else {
+        std::cerr<<"reconstruction error 2D"<<std::endl;
+    }
 }
 
 void test2D(int64 signalLength2D, int64 compressionLevels) {
