@@ -1,5 +1,5 @@
 #ifndef WAVELET_FILTER_H
-#define WAVELET_FILTER_H 
+#define WAVELET_FILTER_H
 #include <iostream>
 class waveletFilter {
 private:
