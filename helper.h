@@ -165,7 +165,7 @@ __global__ void inverseConvolve(double * lowReconstructFilter, double * highReco
     __shared__ double sLow[1024 + 8]; //max per
     __shared__ double sHigh[1024 + 8]; //max per
     sLow[threadIdx.x] = lowCoefficients[lowCoefficientIndex];
-    sHigh[threadIdx.x] = highCoefficients[lowCoefficientIndex];
+    sHigh[threadIdx.x] = highCoefficients[highCoefficientIndex];
 
 #if defined BIG
     if(threadIdx.x == 1023) {
@@ -189,7 +189,7 @@ __global__ void inverseConvolve(double * lowReconstructFilter, double * highReco
         sHigh[1024 + 7] = highCoefficients[highCoefficientIndex + 8];
     }
 #else 
-    if(threadIdx.x == signalLength) {
+    if(threadIdx.x == signalLength - 1) {
         sLow[signalLength] = lowCoefficients[lowCoefficientIndex + 1];
         sLow[signalLength + 1] = lowCoefficients[lowCoefficientIndex + 2];
         sLow[signalLength + 2] = lowCoefficients[lowCoefficientIndex + 3];
@@ -215,25 +215,41 @@ __global__ void inverseConvolve(double * lowReconstructFilter, double * highReco
 #endif
 
 
+#if defined SHARED_MEMORY
+        int64 tIdoffset = 0;
+#endif
+
     while (lowIndex > -1) {
 #if defined SHARED_MEMORY
-        sum += lowReconstructFilter[lowIndex] * sLow[threadIdx.x];
+        sum += lowReconstructFilter[lowIndex] * sLow[threadIdx.x + tIdoffset];
 #else
         sum += lowReconstructFilter[lowIndex] * lowCoefficients[lowCoefficientIndex];
 #endif
         lowIndex -= 2;
+
+#if defined SHARED_MEMORY
+        tIdoffset++;
+#else
         lowCoefficientIndex++;
+#endif
     }
 
     //sum high
+#if defined SHARED_MEMORY
+        tIdoffset = 0;
+#endif
     while (highIndex > -1) {
 #if defined SHARED_MEMORY
-        sum += highReconstructFilter[highIndex] * sHigh[threadIdx.x];
+        sum += highReconstructFilter[highIndex] * sHigh[threadIdx.x + tIdoffset];
 #else
         sum += highReconstructFilter[highIndex] * highCoefficients[highCoefficientIndex];
 #endif
         highIndex -= 2;
+#if defined SHARED_MEMORY
+        tIdoffset++;
+#else
         highCoefficientIndex++;
+#endif
     }
 
     //write out sum

@@ -58,8 +58,8 @@ void initSignal() {
 
     for (int64 i = 0; i < SIGNAL_LENGTH; i++) {
         /*host_signal_array[i] = 1.0 * sin((double)i /100.0) * 100.0;*/
-        /*host_signal_array[i] = 0.1 * float(i);*/
-        host_signal_array[i] = 1.0;
+        host_signal_array[i] = 0.1 * float(i);
+        /*host_signal_array[i] = 1.0;*/
     }
 }
 
@@ -380,8 +380,16 @@ int main(int argc, const char * argv[]) {
 #if defined SHARED_MEMORY
     std::cerr<<"Running with shared memory optimization"<<std::endl;
 #endif
+
 #if defined BIG 
     std::cerr<<"Running large sizes >= 1024"<<std::endl;
+    if(N < 4096) {
+        std::cerr<<"Don't use BIG for sizes smaller than 4096"<<std::end;
+    }
+#else 
+    if(N >= 4096) {
+        std::cerr<<"Use compiler -DBIG for sizes larger than 4096"<<std::endl;
+    }
 #endif
 
     if(!isPowerOfTwo(N)) {
