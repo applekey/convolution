@@ -53,7 +53,8 @@ void initSignal2D() {
 
     for (int64 i = 0; i < signalLength; i++) {
         /*host_signal_array[i] = 1.0 * sin((double)i /100.0) * 100.0;*/
-        host_signal_array_2D[i] = 1.0;
+        //host_signal_array_2D[i] = 1.0;
+        host_signal_array_2D[i] = 0.1 * i;
     }
 }
 
@@ -267,6 +268,6 @@ void test2D(int64 signalLength2D, int64 compressionLevels) {
     std::cout << diff.count() << " 2D De-Compression Total s\n";
     std::cerr<<std::endl;
 
-    //printResult_2D(host_output_array_2D);
-    verifyReconstructedSignal2D();
+    printResult_2D(host_output_array_2D);
+    //verifyReconstructedSignal2D();
 }

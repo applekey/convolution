@@ -57,7 +57,8 @@ void initSignal() {
 
     for (int64 i = 0; i < SIGNAL_LENGTH; i++) {
         /*host_signal_array[i] = 1.0 * sin((double)i /100.0) * 100.0;*/
-        host_signal_array[i] = 1.0;
+        host_signal_array[i] = 0.1 * float(i);
+        /*host_signal_array[i] = 1.0;*/
     }
 }
 
@@ -323,7 +324,6 @@ void test1D() {
     /*for(int i = 0;i < 9; i++ ) {*/
     /*std::cerr<<host_high_reconstruct_filter_array[i]<<std::endl;*/
     /*}*/
-
     /*-------------------UN-COMPRESS THE SIGNAL---------------------*/
     double * tmpMemoryDWTHigh = initTmpCoefficientMemory(SIGNAL_LENGTH);
     double * tmpMemoryDWTLow = initTmpCoefficientMemory(SIGNAL_LENGTH);
@@ -341,8 +341,8 @@ void test1D() {
     diff = endReconstruct - startReconstruct;
     std::cout << diff.count() << "  1D De-Compression Total s\n";
     transferReconstructedMemoryBack(SIGNAL_LENGTH);
-    verifyReconstructedSignal();
-    /*printReconstructedSignal();*/
+    /*verifyReconstructedSignal();*/
+    printReconstructedSignal();
 
     /*-------------------CLEAN-UP---------------------*/
     //done free memory
@@ -373,7 +373,7 @@ int main(int argc, const char * argv[]) {
 
     if(argc != 4) {
         std::cerr<<"incorrect args, example is ./wave 16384 3 1, args are signal size, level of compression, test number"<<std::endl;
-        return;
+        return 0;
     }
 
     int N = atoi(argv[1]);
@@ -389,7 +389,7 @@ int main(int argc, const char * argv[]) {
 
     if(!isPowerOfTwo(N)) {
         std::cerr<<"N,"<<N<<" is not a power of 2"<<std::endl;
-        return;
+        return 0;
     }
 
     std::cerr<<"N is: "<<N<<" levels is: "<<levels<<std::endl;

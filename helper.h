@@ -66,6 +66,7 @@ __global__ void convolveWavelet(double * filter, int64 filterLength,
     // load into shared memory
     __shared__ double s[1024 + 8]; //max per
     s[threadIdx.x] = inputSignal[inputIndex - (filterLength / 2)];
+
     //last one
     if(threadIdx.x == 1023) {
         s[1024] = inputSignal[inputIndex - (filterLength / 2) + 1];
@@ -76,7 +77,6 @@ __global__ void convolveWavelet(double * filter, int64 filterLength,
         s[1029] = inputSignal[inputIndex - (filterLength / 2) + 6];
         s[1030] = inputSignal[inputIndex - (filterLength / 2) + 7];
         s[1031] = inputSignal[inputIndex - (filterLength / 2) + 8];
-        s[1032] = inputSignal[inputIndex - (filterLength / 2) + 9];
     }
 
     __syncthreads();
@@ -109,7 +109,8 @@ __global__ void extend(double * inputSignal, int64 signalLength, int64 filterLen
 
     if (index < sideWidth) {
 
-        extendedSignal[index] = inputSignal[0];
+        int64 mirrorDistance = sideWidth - index;
+        extendedSignal[index] = inputSignal[mirrorDistance];
 
     } else if (index < sideWidth + signalLength) {
 
@@ -117,8 +118,9 @@ __global__ void extend(double * inputSignal, int64 signalLength, int64 filterLen
 
     }  else {
 
+        int64 mirrorDistance = index - signalLength + 1;
         //extendedSignal[index] = SIGNAL_PAD_VALUE;
-        extendedSignal[index] = inputSignal[0];
+        extendedSignal[index] = inputSignal[signalLength - mirrorDistance];
     }
 }
 
@@ -134,22 +136,68 @@ __global__ void inverseConvolve(double * lowReconstructFilter, double * highReco
 
     double sum = 0.0;
     int64 lowIndex, highIndex;
+    if(index % 2 == 0) {
+        lowIndex = filterLength - 1;
+        highIndex = filterLength - 2;
+    } else {
+        lowIndex = filterLength - 2;
+        highIndex = filterLength - 1;
+    } 
 
-    lowIndex = filterLength - 1;
-    highIndex = filterLength - 2;
     //sum low
-    int64 lowCoefficientIndex = (index + 1) / 2;
+    int64 extendOffset = 2;
+    int64 lowCoefficientIndex = (index + 1) / 2 + extendOffset;
+
+    int64 highCoefficientIndex = (index) / 2 + extendOffset;
+
+#if defined SHARED_MEMORYx
+    // load into shared memory
+    __shared__ double sLow[1024 + 8]; //max per
+    __shared__ double sHigh[1024 + 8]; //max per
+    sLow[threadIdx.x] = lowCoefficients[lowCoefficientIndex];
+    sHigh[threadIdx.x] = highCoefficients[lowCoefficientIndex];
+    //last one
+    if(threadIdx.x == 1023) {
+        sLow[1024] = lowCoefficients[lowCoefficientIndex + 1];
+        sLow[1025] = lowCoefficients[lowCoefficientIndex + 2];
+        sLow[1026] = lowCoefficients[lowCoefficientIndex + 3];
+        sLow[1027] = lowCoefficients[lowCoefficientIndex + 4];
+        sLow[1028] = lowCoefficients[lowCoefficientIndex + 5];
+        sLow[1029] = lowCoefficients[lowCoefficientIndex + 6];
+        sLow[1030] = lowCoefficients[lowCoefficientIndex + 7];
+        sLow[1031] = lowCoefficients[lowCoefficientIndex + 8];
+
+        //high
+        sHigh[1024] = highCoefficients[highCoefficientIndex + 1];
+        sHigh[1025] = highCoefficients[highCoefficientIndex + 2];
+        sHigh[1026] = highCoefficients[highCoefficientIndex + 3];
+        sHigh[1027] = highCoefficients[highCoefficientIndex + 4];
+        sHigh[1028] = highCoefficients[highCoefficientIndex + 5];
+        sHigh[1029] = highCoefficients[highCoefficientIndex + 6];
+        sHigh[1030] = highCoefficients[highCoefficientIndex + 7];
+        sHigh[1031] = highCoefficients[highCoefficientIndex + 8];
+    }
+
+    __syncthreads();
+#endif
 
     while (lowIndex > -1) {
+#if defined SHARED_MEMORYx
+        sum += lowReconstructFilter[lowIndex] * sLow[threadIdx.x];
+#else
         sum += lowReconstructFilter[lowIndex] * lowCoefficients[lowCoefficientIndex];
+#endif
         lowIndex -= 2;
         lowCoefficientIndex++;
     }
 
     //sum high
-    int64 highCoefficientIndex = (index) / 2;
     while (highIndex > -1) {
+#if defined SHARED_MEMORYx
+        sum += highReconstructFilter[highIndex] * sHigh[threadIdx.x];
+#else
         sum += highReconstructFilter[highIndex] * highCoefficients[highCoefficientIndex];
+#endif
         highIndex -= 2;
         highCoefficientIndex++;
     }
@@ -249,10 +297,10 @@ void iDwt(MyVector & L, int levelsToReconstruct,
         }
 
         extend <<< blocks, threads>>>(coefficients + coefficientOffsetLow, currentSignalLength,
-                                      filterLength, extendedLowCoeff);
+                                      filterLength, extendedHighCoeff);
 
         extend <<< blocks, threads>>>(currentHighCoefficients, currentSignalLength,
-                                      filterLength, extendedHighCoeff);
+                                      filterLength, extendedLowCoeff);
 
         //debugTmpMemory(extendedLowCoeff, currentExtendedCoefficientLenght);
         //debugTmpMemory(extendedHighCoeff, currentExtendedCoefficientLenght);
@@ -264,7 +312,6 @@ void iDwt(MyVector & L, int levelsToReconstruct,
                                                reconstructedSignal, currentSignalLength * 2);
         currentCoefficientIndex--;
         currentHighCoefficients = reconstructedSignal;
-
     }
 }
 
