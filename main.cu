@@ -379,17 +379,18 @@ int main(int argc, const char * argv[]) {
 
 #if defined SHARED_MEMORY
     std::cerr<<"Running with shared memory optimization"<<std::endl;
-#endif
 
 #if defined BIG 
     std::cerr<<"Running large sizes >= 1024"<<std::endl;
     if(N < 4096) {
-        std::cerr<<"Don't use BIG for sizes smaller than 4096"<<std::end;
+        std::cerr<<"Don't use BIG for sizes smaller than 4096"<<std::endl;
     }
 #else 
     if(N >= 4096) {
         std::cerr<<"Use compiler -DBIG for sizes larger than 4096"<<std::endl;
     }
+#endif
+
 #endif
 
     if(!isPowerOfTwo(N)) {

@@ -160,16 +160,27 @@ __global__ void inverseConvolve(double * lowReconstructFilter, double * highReco
 
     int64 highCoefficientIndex = (index) / 2 + extendOffset;
 
-#if defined SHARED_MEMORY
+#if defined SHARED_MEMORY_NOT_USED
     // load into shared memory
-    __shared__ double sLow[1024 + 8]; //max per
-    __shared__ double sHigh[1024 + 8]; //max per
-    sLow[threadIdx.x] = lowCoefficients[lowCoefficientIndex];
-    sHigh[threadIdx.x] = highCoefficients[highCoefficientIndex];
+    __shared__ double sLow[2048 + 16]; //max per
+    __shared__ double sHigh[2048 + 16]; //max per
+    
+    int64 offset = 0;
+    if(index % 2 != 0) {
+        offset = 1;
+    } 
+
+    sLow[threadIdx.x * 2] = lowCoefficients[lowCoefficientIndex * 2 + offset];
+    sLow[threadIdx.x * 2 + 1] = lowCoefficients[lowCoefficientIndex * 2+ 1 + offset];
+
+    sHigh[threadIdx.x * 2] = highCoefficients[highCoefficientIndex * 2 + offset];
+    sHigh[threadIdx.x * 2 + 1] = highCoefficients[highCoefficientIndex * 2 + 1 + offset];
 
 #if defined BIG
-    if(threadIdx.x == 1023) {
-        sLow[1024] = lowCoefficients[lowCoefficientIndex + 1];
+    if(threadIdx.x == 2047) {
+        for(int i = 0; i < 16; i++) {
+            sLow[2048] = 0.0;
+        } 
         sLow[1024 + 1] = lowCoefficients[lowCoefficientIndex + 2];
         sLow[1024 + 2] = lowCoefficients[lowCoefficientIndex + 3];
         sLow[1024 + 3] = lowCoefficients[lowCoefficientIndex + 4];
@@ -178,8 +189,7 @@ __global__ void inverseConvolve(double * lowReconstructFilter, double * highReco
         sLow[1024 + 6] = lowCoefficients[lowCoefficientIndex + 7];
         sLow[1024 + 7] = lowCoefficients[lowCoefficientIndex + 8];
 
-        //high
-        sHigh[1024] = highCoefficients[highCoefficientIndex + 1];
+        //high sHigh[1024] = highCoefficients[highCoefficientIndex + 1];
         sHigh[1024 + 1] = highCoefficients[highCoefficientIndex + 2];
         sHigh[1024 + 2] = highCoefficients[highCoefficientIndex + 3];
         sHigh[1024 + 3] = highCoefficients[highCoefficientIndex + 4];
@@ -190,24 +200,28 @@ __global__ void inverseConvolve(double * lowReconstructFilter, double * highReco
     }
 #else 
     if(threadIdx.x == signalLength - 1) {
-        sLow[signalLength] = lowCoefficients[lowCoefficientIndex + 1];
-        sLow[signalLength + 1] = lowCoefficients[lowCoefficientIndex + 2];
-        sLow[signalLength + 2] = lowCoefficients[lowCoefficientIndex + 3];
-        sLow[signalLength + 3] = lowCoefficients[lowCoefficientIndex + 4];
-        sLow[signalLength + 4] = lowCoefficients[lowCoefficientIndex + 5];
-        sLow[signalLength + 5] = lowCoefficients[lowCoefficientIndex + 6];
-        sLow[signalLength + 6] = lowCoefficients[lowCoefficientIndex + 7];
-        sLow[signalLength + 7] = lowCoefficients[lowCoefficientIndex + 8];
+        for(int i = 0; i < 16; i++) {
+            sLow[signalLength] = 0.0;
+            sHigh[signalLength] = 0.0;
+        } 
+        //sLow[signalLength] = lowCoefficients[lowCoefficientIndex + 1];
+        //sLow[signalLength + 1] = lowCoefficients[lowCoefficientIndex + 2];
+        //sLow[signalLength + 2] = lowCoefficients[lowCoefficientIndex + 3];
+        //sLow[signalLength + 3] = lowCoefficients[lowCoefficientIndex + 4];
+        //sLow[signalLength + 4] = lowCoefficients[lowCoefficientIndex + 5];
+        //sLow[signalLength + 5] = lowCoefficients[lowCoefficientIndex + 6];
+        //sLow[signalLength + 6] = lowCoefficients[lowCoefficientIndex + 7];
+        //sLow[signalLength + 7] = lowCoefficients[lowCoefficientIndex + 8];
 
-        //high
-        sHigh[signalLength] = highCoefficients[highCoefficientIndex + 1];
-        sHigh[signalLength + 1] = highCoefficients[highCoefficientIndex + 2];
-        sHigh[signalLength + 2] = highCoefficients[highCoefficientIndex + 3];
-        sHigh[signalLength + 3] = highCoefficients[highCoefficientIndex + 4];
-        sHigh[signalLength + 4] = highCoefficients[highCoefficientIndex + 5];
-        sHigh[signalLength + 5] = highCoefficients[highCoefficientIndex + 6];
-        sHigh[signalLength + 6] = highCoefficients[highCoefficientIndex + 7];
-        sHigh[signalLength + 7] = highCoefficients[highCoefficientIndex + 8];
+        ////high
+        //sHigh[signalLength] = highCoefficients[highCoefficientIndex + 1];
+        //sHigh[signalLength + 1] = highCoefficients[highCoefficientIndex + 2];
+        //sHigh[signalLength + 2] = highCoefficients[highCoefficientIndex + 3];
+        //sHigh[signalLength + 3] = highCoefficients[highCoefficientIndex + 4];
+        //sHigh[signalLength + 4] = highCoefficients[highCoefficientIndex + 5];
+        //sHigh[signalLength + 5] = highCoefficients[highCoefficientIndex + 6];
+        //sHigh[signalLength + 6] = highCoefficients[highCoefficientIndex + 7];
+        //sHigh[signalLength + 7] = highCoefficients[highCoefficientIndex + 8];
     }
 
 #endif
@@ -215,19 +229,19 @@ __global__ void inverseConvolve(double * lowReconstructFilter, double * highReco
 #endif
 
 
-#if defined SHARED_MEMORY
+#if defined SHARED_MEMORY_NOT_USED
         int64 tIdoffset = 0;
 #endif
 
     while (lowIndex > -1) {
-#if defined SHARED_MEMORY
-        sum += lowReconstructFilter[lowIndex] * sLow[threadIdx.x + tIdoffset];
+#if defined SHARED_MEMORY_NOT_USED
+        sum += lowReconstructFilter[lowIndex] * sLow[threadIdx.x/2 + tIdoffset];
 #else
         sum += lowReconstructFilter[lowIndex] * lowCoefficients[lowCoefficientIndex];
 #endif
         lowIndex -= 2;
 
-#if defined SHARED_MEMORY
+#if defined SHARED_MEMORY_NOT_USED
         tIdoffset++;
 #else
         lowCoefficientIndex++;
@@ -235,17 +249,17 @@ __global__ void inverseConvolve(double * lowReconstructFilter, double * highReco
     }
 
     //sum high
-#if defined SHARED_MEMORY
+#if defined SHARED_MEMORY_NOT_USED
         tIdoffset = 0;
 #endif
     while (highIndex > -1) {
-#if defined SHARED_MEMORY
-        sum += highReconstructFilter[highIndex] * sHigh[threadIdx.x + tIdoffset];
+#if defined SHARED_MEMORY_NOT_USED
+        sum += highReconstructFilter[highIndex] * sHigh[threadIdx.x/2 + tIdoffset];
 #else
         sum += highReconstructFilter[highIndex] * highCoefficients[highCoefficientIndex];
 #endif
         highIndex -= 2;
-#if defined SHARED_MEMORY
+#if defined SHARED_MEMORY_NOT_USED
         tIdoffset++;
 #else
         highCoefficientIndex++;
