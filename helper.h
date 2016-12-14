@@ -128,9 +128,8 @@ __global__ void extend(double * inputSignal, int64 signalLength, int64 filterLen
 
     }  else {
 
-        int64 mirrorDistance = index - signalLength + 1;
-        //extendedSignal[index] = SIGNAL_PAD_VALUE;
-        extendedSignal[index] = inputSignal[signalLength - mirrorDistance];
+        int64 mirrorDistance = index - signalLength  - sideWidth;
+        extendedSignal[index] = inputSignal[signalLength - 1 - mirrorDistance];
     }
 }
 
@@ -160,110 +159,18 @@ __global__ void inverseConvolve(double * lowReconstructFilter, double * highReco
 
     int64 highCoefficientIndex = (index) / 2 + extendOffset;
 
-#if defined SHARED_MEMORY_NOT_USED
-    // load into shared memory
-    __shared__ double sLow[2048 + 16]; //max per
-    __shared__ double sHigh[2048 + 16]; //max per
-    
-    int64 offset = 0;
-    if(index % 2 != 0) {
-        offset = 1;
-    } 
-
-    sLow[threadIdx.x * 2] = lowCoefficients[lowCoefficientIndex * 2 + offset];
-    sLow[threadIdx.x * 2 + 1] = lowCoefficients[lowCoefficientIndex * 2+ 1 + offset];
-
-    sHigh[threadIdx.x * 2] = highCoefficients[highCoefficientIndex * 2 + offset];
-    sHigh[threadIdx.x * 2 + 1] = highCoefficients[highCoefficientIndex * 2 + 1 + offset];
-
-#if defined BIG
-    if(threadIdx.x == 2047) {
-        for(int i = 0; i < 16; i++) {
-            sLow[2048] = 0.0;
-        } 
-        sLow[1024 + 1] = lowCoefficients[lowCoefficientIndex + 2];
-        sLow[1024 + 2] = lowCoefficients[lowCoefficientIndex + 3];
-        sLow[1024 + 3] = lowCoefficients[lowCoefficientIndex + 4];
-        sLow[1024 + 4] = lowCoefficients[lowCoefficientIndex + 5];
-        sLow[1024 + 5] = lowCoefficients[lowCoefficientIndex + 6];
-        sLow[1024 + 6] = lowCoefficients[lowCoefficientIndex + 7];
-        sLow[1024 + 7] = lowCoefficients[lowCoefficientIndex + 8];
-
-        //high sHigh[1024] = highCoefficients[highCoefficientIndex + 1];
-        sHigh[1024 + 1] = highCoefficients[highCoefficientIndex + 2];
-        sHigh[1024 + 2] = highCoefficients[highCoefficientIndex + 3];
-        sHigh[1024 + 3] = highCoefficients[highCoefficientIndex + 4];
-        sHigh[1024 + 4] = highCoefficients[highCoefficientIndex + 5];
-        sHigh[1024 + 5] = highCoefficients[highCoefficientIndex + 6];
-        sHigh[1024 + 6] = highCoefficients[highCoefficientIndex + 7];
-        sHigh[1024 + 7] = highCoefficients[highCoefficientIndex + 8];
-    }
-#else 
-    if(threadIdx.x == signalLength - 1) {
-        for(int i = 0; i < 16; i++) {
-            sLow[signalLength] = 0.0;
-            sHigh[signalLength] = 0.0;
-        } 
-        //sLow[signalLength] = lowCoefficients[lowCoefficientIndex + 1];
-        //sLow[signalLength + 1] = lowCoefficients[lowCoefficientIndex + 2];
-        //sLow[signalLength + 2] = lowCoefficients[lowCoefficientIndex + 3];
-        //sLow[signalLength + 3] = lowCoefficients[lowCoefficientIndex + 4];
-        //sLow[signalLength + 4] = lowCoefficients[lowCoefficientIndex + 5];
-        //sLow[signalLength + 5] = lowCoefficients[lowCoefficientIndex + 6];
-        //sLow[signalLength + 6] = lowCoefficients[lowCoefficientIndex + 7];
-        //sLow[signalLength + 7] = lowCoefficients[lowCoefficientIndex + 8];
-
-        ////high
-        //sHigh[signalLength] = highCoefficients[highCoefficientIndex + 1];
-        //sHigh[signalLength + 1] = highCoefficients[highCoefficientIndex + 2];
-        //sHigh[signalLength + 2] = highCoefficients[highCoefficientIndex + 3];
-        //sHigh[signalLength + 3] = highCoefficients[highCoefficientIndex + 4];
-        //sHigh[signalLength + 4] = highCoefficients[highCoefficientIndex + 5];
-        //sHigh[signalLength + 5] = highCoefficients[highCoefficientIndex + 6];
-        //sHigh[signalLength + 6] = highCoefficients[highCoefficientIndex + 7];
-        //sHigh[signalLength + 7] = highCoefficients[highCoefficientIndex + 8];
-    }
-
-#endif
-    __syncthreads();
-#endif
-
-
-#if defined SHARED_MEMORY_NOT_USED
-        int64 tIdoffset = 0;
-#endif
-
     while (lowIndex > -1) {
-#if defined SHARED_MEMORY_NOT_USED
-        sum += lowReconstructFilter[lowIndex] * sLow[threadIdx.x/2 + tIdoffset];
-#else
         sum += lowReconstructFilter[lowIndex] * lowCoefficients[lowCoefficientIndex];
-#endif
         lowIndex -= 2;
 
-#if defined SHARED_MEMORY_NOT_USED
-        tIdoffset++;
-#else
         lowCoefficientIndex++;
-#endif
     }
 
     //sum high
-#if defined SHARED_MEMORY_NOT_USED
-        tIdoffset = 0;
-#endif
     while (highIndex > -1) {
-#if defined SHARED_MEMORY_NOT_USED
-        sum += highReconstructFilter[highIndex] * sHigh[threadIdx.x/2 + tIdoffset];
-#else
         sum += highReconstructFilter[highIndex] * highCoefficients[highCoefficientIndex];
-#endif
         highIndex -= 2;
-#if defined SHARED_MEMORY_NOT_USED
-        tIdoffset++;
-#else
         highCoefficientIndex++;
-#endif
     }
 
     //write out sum
@@ -321,8 +228,6 @@ void debugTmpMemory(double * deviceMem, int64 length, int64 stride = 0) {
         if (stride > 0 && i % stride == 0) {
             std::cerr << std::endl;
         }
-        //std::cerr<< std::fixed<<std::setprecision(2)<<tmp[i]<<" ";
-        std::cerr << std::setprecision(2);
         std::cerr << tmp[i] << " ";
     }
     std::cerr << std::endl;
