@@ -342,7 +342,7 @@ void test1D() {
     std::cout << diff.count() << "  1D De-Compression Total s\n";
     transferReconstructedMemoryBack(SIGNAL_LENGTH);
     /*verifyReconstructedSignal();*/
-    printReconstructedSignal();
+    /*printReconstructedSignal();*/
 
     /*-------------------CLEAN-UP---------------------*/
     //done free memory

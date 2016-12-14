@@ -257,6 +257,16 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
 
     int64 filterSideWidth = filterLength / 2;
 
+    int64 yLowStart, yHighStart;
+
+    if(yIndexLocal % 2 == 0) {
+        yLowStart = filterLength - 1;
+        yHighStart = filterLength - 2;
+    } else {
+        yLowStart = filterLength - 2;
+        yHighStart = filterLength - 1;
+    } 
+
     // do extension here
     double sum = 0;
 
@@ -290,20 +300,13 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
                                  + (inputImageMeta.xStart + xIndexLocal) ];
     }
 
-    //lowIndex = filterLength - 1;
-    //highIndex = filterLength - 2;
-    //low = 8
-    //high = 7
-    //sum += lowFilter[0] * valsLow[0];
-    sum += lowFilter[1] * valsLow[3];
-    //sum += lowFilter[2] * valsLow[2];
-    sum += lowFilter[3] * valsLow[2];
-    //sum += lowFilter[4] * valsLow[4];
-    sum += lowFilter[5] * valsLow[1];
-    //sum += lowFilter[6] * valsLow[6];
-    sum += lowFilter[7] * valsLow[0];
-    //sum += 0 * valsLow[8];
-
+    sum += lowFilter[yLowStart] * valsLow[0];
+    yLowStart -= 2;
+    sum += lowFilter[yLowStart] * valsLow[1];
+    yLowStart -= 2;
+    sum += lowFilter[yLowStart] * valsLow[2];
+    yLowStart -= 2;
+    sum += lowFilter[yLowStart] * valsLow[3];
 
     //high
     double valsHigh[9];
@@ -331,15 +334,13 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
                                   + (inputImageMeta.xStart + xIndexLocal) ];
     }
 
-    sum += highFilter[0] * valsHigh[3];
-    //sum += highFilter[1] * valsHigh[1];
-    sum += highFilter[2] * valsHigh[2];
-    //sum += highFilter[3] * valsHigh[3];
-    sum += highFilter[4] * valsHigh[1];
-    //sum += highFilter[5] * valsHigh[5];
-    sum += highFilter[6] * valsHigh[0];
-    //sum += highFilter[7] * valsHigh[7];
-    //sum += highFilter[8] * valsHigh[8];
+    sum += highFilter[yHighStart] * valsHigh[0];
+    yHighStart -= 2;
+    sum += highFilter[yHighStart] * valsHigh[1];
+    yHighStart -= 2;
+    sum += highFilter[yHighStart] * valsHigh[2];
+    yHighStart -= 2;
+    sum += highFilter[yHighStart] * valsHigh[3];
 
     int64 outputIndex = (yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + xIndexLocal);
     reconstructedSignal[outputIndex] = sum;
@@ -361,6 +362,16 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
     int64 blockWidth = inputImageMeta.xEnd - inputImageMeta.xStart;
     int64 yIndexLocal = index / blockWidth;
     int64 xIndexLocal = index % blockWidth;
+
+    int64 yLowStart, yHighStart;
+
+    if(xIndexLocal % 2 == 0) {
+        yLowStart = filterLength - 1;
+        yHighStart = filterLength - 2;
+    } else {
+        yLowStart = filterLength - 2;
+        yHighStart = filterLength - 1;
+    } 
 
     int64 filterSideWidth = filterLength / 2;
 
@@ -393,20 +404,13 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
         valsLow[i] = inputSignal[(yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + lowCoefficientIndex - filterSideWidth + i) ];
     }
 
-    //lowIndex = filterLength - 1;
-    //highIndex = filterLength - 2;
-    //low = 8
-    //high = 7
-    //sum += lowFilter[0] * valsLow[0];
-    sum += lowFilter[1] * valsLow[3];
-    //sum += lowFilter[2] * valsLow[2];
-    sum += lowFilter[3] * valsLow[2];
-    //sum += lowFilter[4] * valsLow[4];
-    sum += lowFilter[5] * valsLow[1];
-    //sum += lowFilter[6] * valsLow[6];
-    sum += lowFilter[7] * valsLow[0];
-    //sum += 0 * valsLow[8];
-
+    sum += lowFilter[yLowStart] * valsLow[0];
+    yLowStart -= 2;
+    sum += lowFilter[yLowStart] * valsLow[1];
+    yLowStart -= 2;
+    sum += lowFilter[yLowStart] * valsLow[2];
+    yLowStart -= 2;
+    sum += lowFilter[yLowStart] * valsLow[3];
 
     //high
     double valsHigh[9];
@@ -430,15 +434,13 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
         valsHigh[i] = inputSignal[(yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + highCoefficientIndex - filterSideWidth + i + highCoefficientOffsetX) ];
     }
 
-    sum += highFilter[0] * valsHigh[3];
-    //sum += highFilter[1] * valsHigh[1];
-    sum += highFilter[2] * valsHigh[2];
-    //sum += highFilter[3] * valsHigh[3];
-    sum += highFilter[4] * valsHigh[1];
-    //sum += highFilter[5] * valsHigh[5];
-    sum += highFilter[6] * valsHigh[0];
-    //sum += highFilter[7] * valsHigh[7];
-    //sum += highFilter[8] * valsHigh[8];
+    sum += highFilter[yHighStart] * valsHigh[0];
+    yHighStart -= 2;
+    sum += highFilter[yHighStart] * valsHigh[1];
+    yHighStart -= 2;
+    sum += highFilter[yHighStart] * valsHigh[2];
+    yHighStart -= 2;
+    sum += highFilter[yHighStart] * valsHigh[3];
 
     int64 outputIndex = (yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + xIndexLocal);
     reconstructedSignal[outputIndex] = valsHigh[3];
