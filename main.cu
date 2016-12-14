@@ -17,6 +17,7 @@ using namespace std;
 
 int64 SIGNAL_LENGTH = 0;
 int64 COMPRESSION_LEVELS = 0;
+int64 PRINT_INTERMEDIATE = 0;
 
 //signal
 double * host_signal_array = 0;
@@ -57,8 +58,8 @@ void initSignal() {
 
     for (int64 i = 0; i < SIGNAL_LENGTH; i++) {
         /*host_signal_array[i] = 1.0 * sin((double)i /100.0) * 100.0;*/
-        host_signal_array[i] = 0.1 * float(i);
-        /*host_signal_array[i] = 1.0;*/
+        /*host_signal_array[i] = 0.1 * float(i);*/
+        host_signal_array[i] = 1.0;
     }
 }
 
@@ -307,23 +308,11 @@ void test1D() {
     transferMemoryBack(outputLength);
 
     cudaFree(tmpMemoryDWT);
-    /*printOutputCoefficients(host_output_array, coefficientIndicies);*/
 
-    /*int ab = calculateCoefficientLength(coefficientIndicies, COMPRESSION_LEVELS, SIGNAL_LENGTH);*/
-    /*writeResultsToMemory(host_output_array, ab);*/
+    if(PRINT_INTERMEDIATE) {
+        printOutputCoefficients(host_output_array, coefficientIndicies);
+    };
 
-    /*-------------------DEBUG---------------------*/
-    /*std::cerr<<"low"<<std::endl;*/
-    /*for(int i = 0;i < 9; i++ ) {*/
-    /*std::cerr<<host_low_reconstruct_filter_array[i]<<std::endl;*/
-    /*}*/
-
-    /*std::cerr<<"break"<<std::endl;*/
-
-    /*std::cerr<<"high"<<std::endl;*/
-    /*for(int i = 0;i < 9; i++ ) {*/
-    /*std::cerr<<host_high_reconstruct_filter_array[i]<<std::endl;*/
-    /*}*/
     /*-------------------UN-COMPRESS THE SIGNAL---------------------*/
     double * tmpMemoryDWTHigh = initTmpCoefficientMemory(SIGNAL_LENGTH);
     double * tmpMemoryDWTLow = initTmpCoefficientMemory(SIGNAL_LENGTH);
@@ -341,8 +330,11 @@ void test1D() {
     diff = endReconstruct - startReconstruct;
     std::cout << diff.count() << "  1D De-Compression Total s\n";
     transferReconstructedMemoryBack(SIGNAL_LENGTH);
-    /*verifyReconstructedSignal();*/
-    /*printReconstructedSignal();*/
+    verifyReconstructedSignal();
+
+    if(PRINT_INTERMEDIATE) {
+        printReconstructedSignal();
+    };
 
     /*-------------------CLEAN-UP---------------------*/
     //done free memory
@@ -371,7 +363,7 @@ int main(int argc, const char * argv[]) {
     //scrub input
     verifyTimer();
 
-    if(argc != 4) {
+    if(argc <= 4) {
         std::cerr<<"incorrect args, example is ./wave 16384 3 1, args are signal size, level of compression, test number"<<std::endl;
         return 0;
     }
@@ -379,12 +371,17 @@ int main(int argc, const char * argv[]) {
     int N = atoi(argv[1]);
     int levels = atoi(argv[2]);
     int test = atoi(argv[3]);
+    int printIntermediate = atoi(argv[4]);
     assert(N > 0);
     assert(levels > 0);
     assert(test > 0);
+    assert(printIntermediate == 0 ||  printIntermediate == 1);
 
 #if defined SHARED_MEMORY
     std::cerr<<"Running with shared memory optimization"<<std::endl;
+#endif
+#if defined BIG 
+    std::cerr<<"Running large sizes >= 1024"<<std::endl;
 #endif
 
     if(!isPowerOfTwo(N)) {
@@ -395,6 +392,7 @@ int main(int argc, const char * argv[]) {
     std::cerr<<"N is: "<<N<<" levels is: "<<levels<<std::endl;
     SIGNAL_LENGTH = N;
     COMPRESSION_LEVELS = levels;
+    PRINT_INTERMEDIATE = printIntermediate;
     
     if(test == 1) {
         test1D();
