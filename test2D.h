@@ -207,7 +207,7 @@ void verifyReconstructedSignal2D() {
     std::cerr << "Verifiying Signal 2D" << std::endl;
 
     for (int64 i = 0 ; i < sigLength; i++) {
-        if (!isCloseTo2D(host_output_array_2D[i], sigGenerator2D.valueGivenIndex(i, sigLength), 0.1)) {
+        if (!isCloseTo2D(host_output_array_2D[i], sigGenerator2D.valueGivenIndex(i, sigLength), 0.01)) {
             allCorrect = false;
         }
     }
