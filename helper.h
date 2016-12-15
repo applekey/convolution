@@ -1,4 +1,5 @@
 #ifndef HELPER_H
+
 #define HELPER_H
 
 #define SIGNAL_PAD_VALUE 1.0
@@ -57,15 +58,19 @@ __global__ void convolveWavelet(double * filter, int64 filterLength,
                                 double * inputSignal, int64 signalLength,
                                 double * output, int64 outputOffset, int64 highOffset) {
     int64 index = calculateIndex();
+
     if (index >= signalLength) {
         return;
     }
+
     int64 inputIndex = index * 2 + (filterLength / 2) + highOffset;
 
 #if defined SHARED_MEMORY
     // load into shared memory
-    __shared__ double s[1024 + 8]; //max per
-    s[threadIdx.x] = inputSignal[inputIndex - (filterLength / 2)];
+    __shared__ double s[2048 + 8]; //max per
+    s[threadIdx.x * 2] = inputSignal[inputIndex - (filterLength / 2)];
+    s[threadIdx.x * 2 + 1] = inputSignal[inputIndex - (filterLength / 2) + 1];
+
 #if defined BIG
     if(threadIdx.x == 1023) {
         s[1024] = inputSignal[inputIndex - (filterLength / 2) + 1];
@@ -79,14 +84,10 @@ __global__ void convolveWavelet(double * filter, int64 filterLength,
     }
 #else
     if(threadIdx.x == signalLength - 1) {
-        s[signalLength] = inputSignal[inputIndex - (filterLength / 2) + 1];
-        s[signalLength + 1] = inputSignal[inputIndex - (filterLength / 2) + 2];
-        s[signalLength + 2] = inputSignal[inputIndex - (filterLength / 2) + 3];
-        s[signalLength + 3] = inputSignal[inputIndex - (filterLength / 2) + 4];
-        s[signalLength + 4] = inputSignal[inputIndex - (filterLength / 2) + 5];
-        s[signalLength + 5] = inputSignal[inputIndex - (filterLength / 2) + 6];
-        s[signalLength + 6] = inputSignal[inputIndex - (filterLength / 2) + 7];
-        s[signalLength + 7] = inputSignal[inputIndex - (filterLength / 2) + 8];
+        for(int i = 0; i < 8; i++) {
+            s[signalLength * 2 + i*2] = inputSignal[inputIndex - (filterLength / 2) + (i+1)*2];
+            s[signalLength * 2 + 1 + i*2] = inputSignal[inputIndex - (filterLength / 2) + (i+1)*2 + 1];
+        }
     }
 #endif
     __syncthreads();
@@ -97,7 +98,7 @@ __global__ void convolveWavelet(double * filter, int64 filterLength,
     for (int64 i = 0; i < filterLength; i++) {
 
 #if defined SHARED_MEMORY
-        sum += filter[i] * s[threadIdx.x + i];
+        sum += filter[i] * s[threadIdx.x * 2 + i];
 #else
         sum += filter[i] * inputSignal[inputIndex - (filterLength / 2) + i];
 #endif
@@ -107,7 +108,7 @@ __global__ void convolveWavelet(double * filter, int64 filterLength,
 }
 
 __global__ void extend(double * inputSignal, int64 signalLength, int64 filterLength,
-                       double * extendedSignal) {
+                       double * extendedSignal, int64 inverseOffset = 0) {
 
     int64 index = calculateIndex();
 
@@ -128,7 +129,7 @@ __global__ void extend(double * inputSignal, int64 signalLength, int64 filterLen
 
     }  else {
 
-        int64 mirrorDistance = index - signalLength  - sideWidth;
+        int64 mirrorDistance = index - signalLength  - sideWidth + 1 + inverseOffset;
         extendedSignal[index] = inputSignal[signalLength - 1 - mirrorDistance];
     }
 }

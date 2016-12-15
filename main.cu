@@ -49,6 +49,26 @@ double * device_reconstruted_output_array = 0;
 
 waveletFilter filter;
 
+
+struct signalGenerator {
+    double valueGivenIndex(int64 index, int64 maxIndex) {
+        return 0.1 * float(index);
+    }
+
+    double calculateRMSE(double * reconstructedSignal, int64 maxIndex) {
+        double errorSum = 0;
+        for(int64 i = 0; i < maxIndex; i++ ) {
+            double differenceSqured = (reconstructedSignal[i] - valueGivenIndex(i, maxIndex)) * 
+                                (reconstructedSignal[i] - valueGivenIndex(i, maxIndex));
+            errorSum += differenceSqured;
+            
+        }
+        return sqrt(errorSum / float(maxIndex));
+    }
+};
+
+struct signalGenerator sigGenerator;
+
 void initSignal() {
 
     int64 num_bytes = SIGNAL_LENGTH * sizeof(double);
@@ -57,9 +77,7 @@ void initSignal() {
     host_signal_array = (double *)malloc(num_bytes);
 
     for (int64 i = 0; i < SIGNAL_LENGTH; i++) {
-        /*host_signal_array[i] = 1.0 * sin((double)i /100.0) * 100.0;*/
-        host_signal_array[i] = 0.1 * float(i);
-        /*host_signal_array[i] = 1.0;*/
+        host_signal_array[i] = sigGenerator.valueGivenIndex(i, SIGNAL_LENGTH);
     }
 }
 
@@ -146,9 +164,6 @@ void transferMemoryBack(int64 outputLength) {
     int64 num_bytes = outputLength * sizeof(double);
     assert(num_bytes != 0);
 
-    /*cudaHostAlloc((void**)&host_output_array, num_bytes, */
-    /*cudaHostAllocDefault) ;*/
-
     host_output_array = (double *)malloc(num_bytes);
     cudaMemcpy(host_output_array, device_output_array + SIGNAL_LENGTH / 2, num_bytes, cudaMemcpyDeviceToHost);
 }
@@ -164,14 +179,7 @@ void transferReconstructedMemoryBack(int64 outputLength) {
 
 void printOutputCoefficients(double * hostOutput, MyVector & coefficientIndicies) {
     int64 offset = 0;
-    /*int offset = SIGNAL_LENGTH / 2;*/
     int coefficientLevels = coefficientIndicies.size();
-
-    /*int total = coefficientIndicies[3];*/
-    /*std::cerr<<coefficientLevels<<" "<<total<<std::endl;*/
-    /*for(int i =0; i< total; i++) {*/
-    /*std::cerr<<hostOutput[offset + i]<<std::endl;*/
-    /*}*/
 
     for (int i = 0; i < coefficientLevels - 1; i++) {
         std::cerr << "Level: " << i << std::endl;
@@ -201,6 +209,9 @@ bool isCloseTo(double a, double b, double epsilon) {
     }
 }
 void verifyReconstructedSignal() {
+    double rmse = sigGenerator.calculateRMSE(host_reconstruct_output_array, SIGNAL_LENGTH);
+    std::cerr<<"RMSE: "<<rmse<<std::endl;
+    return;
     bool allCorrect = true;
     std::cerr << "Verifiying Signal" << std::endl;
     for (int64 i = 0 ; i < SIGNAL_LENGTH; i++) {
@@ -237,22 +248,6 @@ void freeMemory() {
 }
 
 void writeResultsToMemory(double * output, int64 length) {
-    /*double epsilon = 0.0000001;*/
-    /*double a = -1.41442e-12;*/
-    /*double b = 1.41421;*/
-
-    /*int offset = SIGNAL_LENGTH / 2;*/
-    /*for(int i = 0; i < length/2; i++) {*/
-    /*if(abs(a -  output[i + offset]) < epsilon * 1.0e-12 ) {*/
-    /*std::cerr<<"error "<<output[i + offset]<<std::endl;*/
-    /*}*/
-    /*}*/
-    /*for(int i = length/2; i < length; i++) {*/
-    /*if(abs(b -  output[i + offset]) < epsilon) {*/
-    /*std::cerr<<"error "<<output[i + offset]<<std::endl;*/
-    /*}*/
-    /*}*/
-    /*return;*/
     int64 offset = SIGNAL_LENGTH / 2;
     ofstream myfile;
     myfile.open("output.txt");
@@ -354,9 +349,11 @@ void verifyTimer() {
 
 int isPowerOfTwo (unsigned int x)
 {
- while (((x % 2) == 0) && x > 1) /* While x is even and > 1 */
-   x /= 2;
- return (x == 1);
+    while (((x % 2) == 0) && x > 1) {
+        x /= 2;
+    }
+
+    return (x == 1);
 }
 
 int main(int argc, const char * argv[]) {
@@ -380,12 +377,12 @@ int main(int argc, const char * argv[]) {
 #if defined SHARED_MEMORY
     std::cerr<<"Running with shared memory optimization"<<std::endl;
 
-#if defined BIG 
+#if defined BIG
     std::cerr<<"Running large sizes >= 1024"<<std::endl;
     if(N < 4096) {
         std::cerr<<"Don't use BIG for sizes smaller than 4096"<<std::endl;
     }
-#else 
+#else
     if(N >= 4096) {
         std::cerr<<"Use compiler -DBIG for sizes larger than 4096"<<std::endl;
     }
@@ -402,7 +399,7 @@ int main(int argc, const char * argv[]) {
     SIGNAL_LENGTH = N;
     COMPRESSION_LEVELS = levels;
     PRINT_INTERMEDIATE = printIntermediate;
-    
+
     if(test == 1) {
         test1D();
     } else if(test == 2) {
