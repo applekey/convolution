@@ -44,14 +44,14 @@ struct signalGenerator2D {
     double calculateRMSE(double * reconstructedSignal, int64 maxIndex) {
         double errorSum = 0;
         for(int64 i = 0; i < maxIndex; i++ ) {
-            double differenceSqured = (reconstructedSignal[i] - valueGivenIndex(i, maxIndex) + 0.2) * 
-                                (reconstructedSignal[i] - valueGivenIndex(i, maxIndex) + 0.2);
+            double differenceSqured = (reconstructedSignal[i] - valueGivenIndex(i, maxIndex)) * 
+                                (reconstructedSignal[i] - valueGivenIndex(i, maxIndex));
             errorSum += differenceSqured;
-            
         }
         return sqrt(errorSum / float(maxIndex));
     }
 };
+
 struct signalGenerator2D sigGenerator2D;
 
 int64 get1DSignalLength() {
@@ -153,14 +153,6 @@ void initOutput_2D() {
     if (err != cudaSuccess) {
         printf("The error is %s", cudaGetErrorString(err));
     }
-
-    double * tmp  = (double *)malloc(num_bytes);
-
-    for (int64 i = 0; i < get1DSignalLength(); i++) {
-        tmp[i] = 0.0;
-    }
-    cudaMemcpy(device_output_array_2D, tmp, num_bytes, cudaMemcpyHostToDevice);
-    free(tmp);
 }
 
 void initDeviceTmpMemory() {
@@ -212,20 +204,6 @@ void verifyReconstructedSignal2D() {
     std::cerr<<"RMSE: "<<rmse<<std::endl;
 
     return;
-
-    //bool allCorrect = true;
-    //std::cerr << "Verifiying Signal 2D" << std::endl;
-    //for (int64 i = 0 ; i < SIGNAL_LENGTH_2D * SIGNAL_LENGTH_2D; i++) {
-        //if (!isCloseTo2D(host_output_array_2D[i], 1, 0.01)) {
-            //allCorrect = false;
-        //}
-    //}
-
-    //if(allCorrect) {
-        //std::cerr<<"all correct 2D"<<std::endl;
-    //} else {
-        //std::cerr<<"reconstruction error 2D"<<std::endl;
-    //}
 }
 
 void test2D(int64 signalLength2D, int64 compressionLevels, int PRINT_INTERMEDIATE) {

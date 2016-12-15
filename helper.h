@@ -105,7 +105,7 @@ __global__ void convolveWavelet(double * filter, int64 filterLength,
 }
 
 __global__ void extend(double * inputSignal, int64 signalLength, int64 filterLength,
-                       double * extendedSignal, int64 inverseOffset = 0) {
+                       double * extendedSignal, int64 leftOffset = 0, int64 rightOffset = 0) {
 
     int64 index = calculateIndex();
 
@@ -117,7 +117,7 @@ __global__ void extend(double * inputSignal, int64 signalLength, int64 filterLen
 
     if (index < sideWidth) {
 
-        int64 mirrorDistance = sideWidth - index;
+        int64 mirrorDistance = sideWidth - index + leftOffset;
         extendedSignal[index] = inputSignal[mirrorDistance];
 
     } else if (index < sideWidth + signalLength) {
@@ -126,7 +126,7 @@ __global__ void extend(double * inputSignal, int64 signalLength, int64 filterLen
 
     }  else {
 
-        int64 mirrorDistance = index - signalLength  - sideWidth + 1 + inverseOffset;
+        int64 mirrorDistance = index - signalLength  - sideWidth + 1 + rightOffset;
         extendedSignal[index] = inputSignal[signalLength - 1 - mirrorDistance];
     }
 }
@@ -264,10 +264,10 @@ void iDwt(MyVector & L, int levelsToReconstruct,
         }
 
         extend <<< blocks, threads>>>(coefficients + coefficientOffsetLow, currentSignalLength,
-                                      filterLength, extendedHighCoeff);
+                                      filterLength, extendedHighCoeff, -1, 0);
 
         extend <<< blocks, threads>>>(currentHighCoefficients, currentSignalLength,
-                                      filterLength, extendedLowCoeff);
+                                      filterLength, extendedLowCoeff, 0, -1);
 
         //debugTmpMemory(extendedLowCoeff, currentExtendedCoefficientLenght);
         //debugTmpMemory(extendedHighCoeff, currentExtendedCoefficientLenght);

@@ -1,4 +1,5 @@
 #include "helper.h"
+#define OFFSETVAL 2
 
 
 struct vec2 {
@@ -304,14 +305,14 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
                                  + (inputImageMeta.xStart + xIndexLocal) ];
     }
     
-    int64 offsetVals = 2;
+    int64 offsetVals = OFFSETVAL;
     sum += lowFilter[yLowStart] * valsLow[0 + offsetVals];
     yLowStart -= 2;
-    sum += lowFilter[yLowStart] * valsLow[1+ offsetVals];
+    sum += lowFilter[yLowStart] * valsLow[1 + offsetVals];
     yLowStart -= 2;
-    sum += lowFilter[yLowStart] * valsLow[2+ offsetVals];
+    sum += lowFilter[yLowStart] * valsLow[2 + offsetVals];
     yLowStart -= 2;
-    sum += lowFilter[yLowStart] * valsLow[3+ offsetVals];
+    sum += lowFilter[yLowStart] * valsLow[3 + offsetVals];
 
     //high
     double valsHigh[9];
@@ -412,7 +413,7 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
     for (int i = filledL; i < 9 - filledR; i++) {
         valsLow[i] = inputSignal[(yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + lowCoefficientIndex - filterSideWidth + i) ];
     }
-    int64 offsetVals = 2;
+    int64 offsetVals = OFFSETVAL;
     sum += lowFilter[yLowStart] * valsLow[0 + offsetVals];
     yLowStart -= 2;
     sum += lowFilter[yLowStart] * valsLow[1+ offsetVals];

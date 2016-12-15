@@ -403,9 +403,13 @@ int main(int argc, const char * argv[]) {
     PRINT_INTERMEDIATE = printIntermediate;
 
     if(test == 1) {
+
         test1D();
+
     } else if(test == 2) {
+
         test2D(SIGNAL_LENGTH, COMPRESSION_LEVELS, PRINT_INTERMEDIATE);
     }
+
     return 0;
 }
