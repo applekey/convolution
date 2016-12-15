@@ -52,6 +52,7 @@ waveletFilter filter;
 
 struct signalGenerator {
     double valueGivenIndex(int64 index, int64 maxIndex) {
+        /*return 1.0;*/
         return 0.1 * float(index);
     }
 
