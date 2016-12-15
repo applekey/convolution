@@ -309,13 +309,12 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
     }
 
     int64 offsetVals = OFFSETVAL;
-    sum += lowFilter[yLowStart] * valsLow[0 + offsetVals];
-    yLowStart -= 2;
-    sum += lowFilter[yLowStart] * valsLow[1 + offsetVals];
-    yLowStart -= 2;
-    sum += lowFilter[yLowStart] * valsLow[2 + offsetVals];
-    yLowStart -= 2;
-    sum += lowFilter[yLowStart] * valsLow[3 + offsetVals];
+    int64 iC = 0;
+    while(yLowStart > -1) {
+        sum += lowFilter[yLowStart] * valsLow[iC + offsetVals];
+        yLowStart -= 2;
+        iC++;
+    }
 
     //high
     double valsHigh[9];
@@ -344,13 +343,12 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
                                   + (inputImageMeta.xStart + xIndexLocal) ];
     }
 
-    sum += highFilter[yHighStart] * valsHigh[0 + offsetVals];
-    yHighStart -= 2;
-    sum += highFilter[yHighStart] * valsHigh[1+ offsetVals];
-    yHighStart -= 2;
-    sum += highFilter[yHighStart] * valsHigh[2+ offsetVals];
-    yHighStart -= 2;
-    sum += highFilter[yHighStart] * valsHigh[3+ offsetVals];
+    iC = 0;
+    while(yHighStart > -1) {
+        sum += highFilter[yHighStart] * valsHigh[iC + offsetVals];
+        yHighStart -= 2;
+        iC ++;
+    }
 
     int64 outputIndex = (yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + xIndexLocal);
     reconstructedSignal[outputIndex] = sum;
@@ -416,13 +414,12 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
         valsLow[i] = inputSignal[(yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + lowCoefficientIndex - filterSideWidth + i) ];
     }
     int64 offsetVals = OFFSETVAL;
-    sum += lowFilter[yLowStart] * valsLow[0 + offsetVals];
-    yLowStart -= 2;
-    sum += lowFilter[yLowStart] * valsLow[1+ offsetVals];
-    yLowStart -= 2;
-    sum += lowFilter[yLowStart] * valsLow[2+ offsetVals];
-    yLowStart -= 2;
-    sum += lowFilter[yLowStart] * valsLow[3+ offsetVals];
+    int64 iC = 0;
+    while(yLowStart > -1) {
+        sum += lowFilter[yLowStart] * valsLow[iC + offsetVals];
+        yLowStart -= 2;
+        iC++;
+    }
 
     //high
     double valsHigh[9];
@@ -448,13 +445,12 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
         valsHigh[i] = inputSignal[(yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + highCoefficientIndex - filterSideWidth + i + highCoefficientOffsetX) ];
     }
 
-    sum += highFilter[yHighStart] * valsHigh[0+ offsetVals];
-    yHighStart -= 2;
-    sum += highFilter[yHighStart] * valsHigh[1+ offsetVals];
-    yHighStart -= 2;
-    sum += highFilter[yHighStart] * valsHigh[2+ offsetVals];
-    yHighStart -= 2;
-    sum += highFilter[yHighStart] * valsHigh[3+ offsetVals];
+    iC = 0;
+    while(yHighStart > -1) {
+        sum += highFilter[yHighStart] * valsHigh[iC+ offsetVals];
+        iC++;
+        yHighStart -= 2;
+    }
 
     int64 outputIndex = (yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + xIndexLocal);
     reconstructedSignal[outputIndex] = sum;
@@ -469,7 +465,7 @@ void iDwt2D(int levelsToCompressUncompress,
             double * deviceOutputCoefficients,
             double * deviceTmpMemory) {
 
-    bool isHorizontal = true;
+    bool isHorizontal = false;
     //calculate current image meta
     struct ImageMeta currentImageMeta = inputImageMeta;
 
@@ -478,6 +474,17 @@ void iDwt2D(int levelsToCompressUncompress,
         auto startLocal = std::chrono::system_clock::now();
 
         if (isHorizontal) {
+            int64 totalNumElements = currentImageMeta.xEnd *  currentImageMeta.yEnd;
+            int threads;
+            dim3 blocks;
+            calculateBlockSize(totalNumElements, threads, blocks);
+
+            inverseConvolveHorizontal <<< blocks, threads>>>(deviceTmpMemory, filterLength,
+                    totalNumElements,
+                    deviceILowFilter, deviceIHighFilter,
+                    currentImageMeta,
+                    deviceOutputCoefficients);
+        } else {
             //expand current image size
             currentImageMeta.xEnd *= 2;
             currentImageMeta.yEnd *= 2;
@@ -486,22 +493,11 @@ void iDwt2D(int levelsToCompressUncompress,
             int threads;
             dim3 blocks;
             calculateBlockSize(totalNumElements, threads, blocks);
-
-            inverseConvolveHorizontal <<< blocks, threads>>>(deviceInputSignal, filterLength,
+            inverseConvolveVertical <<< blocks, threads>>>(deviceInputSignal, filterLength,
                     totalNumElements,
                     deviceILowFilter, deviceIHighFilter,
                     currentImageMeta,
                     deviceTmpMemory);
-        } else {
-            int64 totalNumElements = currentImageMeta.xEnd *  currentImageMeta.yEnd;
-            int threads;
-            dim3 blocks;
-            calculateBlockSize(totalNumElements, threads, blocks);
-            inverseConvolveVertical <<< blocks, threads>>>(deviceTmpMemory, filterLength,
-                    totalNumElements,
-                    deviceILowFilter, deviceIHighFilter,
-                    currentImageMeta,
-                    deviceOutputCoefficients);
         }
         //cudaDeviceSynchronize();
 
