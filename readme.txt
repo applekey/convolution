@@ -1,0 +1,2 @@
+-DSHARED_MEMORY for using shared memory optimization
+-DBIG for inputs larger than 2048 when using shared memory
