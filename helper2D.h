@@ -238,7 +238,7 @@ struct ImageMeta dwt2D(int levelsToCompress,
             currentInputSignal = deviceOutputCoefficients;
         }
         isHorizontal = !isHorizontal;
-        
+
     }
     return currentImageMeta;
 }
@@ -270,7 +270,7 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
     } else {
         yLowStart = filterLength - 2;
         yHighStart = filterLength - 1;
-    } 
+    }
 
     // do extension here
     double sum = 0;
@@ -304,7 +304,7 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
         valsLow[i] = inputSignal[(inputImageMeta.yStart + lowCoefficientIndex - filterSideWidth + i) * stride
                                  + (inputImageMeta.xStart + xIndexLocal) ];
     }
-    
+
     int64 offsetVals = OFFSETVAL;
     sum += lowFilter[yLowStart] * valsLow[0 + offsetVals];
     yLowStart -= 2;
@@ -379,7 +379,7 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
     } else {
         yLowStart = filterLength - 2;
         yHighStart = filterLength - 1;
-    } 
+    }
 
     int64 filterSideWidth = filterLength / 2;
 
@@ -472,7 +472,7 @@ void iDwt2D(int levelsToCompressUncompress,
     struct ImageMeta currentImageMeta = inputImageMeta;
 
     for (int level = 0; level < levelsToCompressUncompress * 2; level++) {
-    
+
         auto startLocal = std::chrono::system_clock::now();
 
         if (isHorizontal) {

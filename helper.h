@@ -149,7 +149,7 @@ __global__ void inverseConvolve(double * lowReconstructFilter, double * highReco
     } else {
         lowIndex = filterLength - 2;
         highIndex = filterLength - 1;
-    } 
+    }
 
     //sum low
     int64 extendOffset = 2;

@@ -44,8 +44,8 @@ struct signalGenerator2D {
     double calculateRMSE(double * reconstructedSignal, int64 maxIndex) {
         double errorSum = 0;
         for(int64 i = 0; i < maxIndex; i++ ) {
-            double differenceSqured = (reconstructedSignal[i] - valueGivenIndex(i, maxIndex)) * 
-                                (reconstructedSignal[i] - valueGivenIndex(i, maxIndex));
+            double differenceSqured = (reconstructedSignal[i] - valueGivenIndex(i, maxIndex)) *
+                                      (reconstructedSignal[i] - valueGivenIndex(i, maxIndex));
             errorSum += differenceSqured;
         }
         return sqrt(errorSum / float(maxIndex));
