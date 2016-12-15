@@ -35,6 +35,25 @@ double * deviceTmpMemory = 0;
 double * host_output_array_2D = 0;
 double * device_output_array_2D = 0;
 
+struct signalGenerator2D {
+    double valueGivenIndex(int64 index, int64 maxIndex) {
+        /*return 1.0;*/
+        return 0.1 * float(index);
+    }
+
+    double calculateRMSE(double * reconstructedSignal, int64 maxIndex) {
+        double errorSum = 0;
+        for(int64 i = 0; i < maxIndex; i++ ) {
+            double differenceSqured = (reconstructedSignal[i] - valueGivenIndex(i, maxIndex) + 0.2) * 
+                                (reconstructedSignal[i] - valueGivenIndex(i, maxIndex) + 0.2);
+            errorSum += differenceSqured;
+            
+        }
+        return sqrt(errorSum / float(maxIndex));
+    }
+};
+struct signalGenerator2D sigGenerator2D;
+
 int64 get1DSignalLength() {
     int64 totalSignalLength = SIGNAL_LENGTH_2D * SIGNAL_LENGTH_2D;
     assert(totalSignalLength > SIGNAL_LENGTH_2D); //check for overflow
@@ -52,9 +71,7 @@ void initSignal2D() {
     host_signal_array_2D = (double *)malloc(num_bytes);
 
     for (int64 i = 0; i < signalLength; i++) {
-        /*host_signal_array[i] = 1.0 * sin((double)i /100.0) * 100.0;*/
-        //host_signal_array_2D[i] = 1.0;
-        host_signal_array_2D[i] = 0.1 * i;
+        host_signal_array_2D[i] = sigGenerator2D.valueGivenIndex(i, signalLength);
     }
 }
 
@@ -190,22 +207,28 @@ bool isCloseTo2D(double a, double b, double epsilon) {
 }
 
 void verifyReconstructedSignal2D() {
-    bool allCorrect = true;
-    std::cerr << "Verifiying Signal 2D" << std::endl;
-    for (int64 i = 0 ; i < SIGNAL_LENGTH_2D * SIGNAL_LENGTH_2D; i++) {
-        if (!isCloseTo2D(host_output_array_2D[i], 1, 0.01)) {
-            allCorrect = false;
-        }
-    }
+    int64 sigLength = get1DSignalLength();
+    double rmse = sigGenerator2D.calculateRMSE(host_output_array_2D, sigLength);
+    std::cerr<<"RMSE: "<<rmse<<std::endl;
 
-    if(allCorrect) {
-        std::cerr<<"all correct 2D"<<std::endl;
-    } else {
-        std::cerr<<"reconstruction error 2D"<<std::endl;
-    }
+    return;
+
+    //bool allCorrect = true;
+    //std::cerr << "Verifiying Signal 2D" << std::endl;
+    //for (int64 i = 0 ; i < SIGNAL_LENGTH_2D * SIGNAL_LENGTH_2D; i++) {
+        //if (!isCloseTo2D(host_output_array_2D[i], 1, 0.01)) {
+            //allCorrect = false;
+        //}
+    //}
+
+    //if(allCorrect) {
+        //std::cerr<<"all correct 2D"<<std::endl;
+    //} else {
+        //std::cerr<<"reconstruction error 2D"<<std::endl;
+    //}
 }
 
-void test2D(int64 signalLength2D, int64 compressionLevels) {
+void test2D(int64 signalLength2D, int64 compressionLevels, int PRINT_INTERMEDIATE) {
     std::cerr << "Testing 2D Decompose" << std::endl;
 
     SIGNAL_LENGTH_2D = signalLength2D;
@@ -222,9 +245,8 @@ void test2D(int64 signalLength2D, int64 compressionLevels) {
     copyInputSignal2D();
     initReconstructedSignal2D();
     initDeviceTmpMemory();
-    //decompose the signal
-    MyVector levels;
 
+    //decompose the signal
     struct ImageMeta imageMeta;
     imageMeta.imageWidth = SIGNAL_LENGTH_2D;
     imageMeta.imageHeight = SIGNAL_LENGTH_2D;
@@ -235,7 +257,7 @@ void test2D(int64 signalLength2D, int64 compressionLevels) {
 
     auto startDecompose = std::chrono::system_clock::now();
 
-    struct ImageMeta compressionResultMeta = dwt2D(levels, COMPRESSION_LEVELS_2D, device_signal_array_2D,
+    struct ImageMeta compressionResultMeta = dwt2D(COMPRESSION_LEVELS_2D, device_signal_array_2D,
             imageMeta, device_low_filter_array_2D,
             device_high_filter_array_2D, 9, imageMeta,
             device_output_array_2D, deviceTmpMemory);
@@ -247,10 +269,13 @@ void test2D(int64 signalLength2D, int64 compressionLevels) {
     std::cerr<<std::endl;
     std::cout << diff.count() << " 2D Compression Total s\n";
     std::cerr<<std::endl;
-    //printResult_2D(host_output_array_2D);
+
+    if(PRINT_INTERMEDIATE) {
+        printResult_2D(host_output_array_2D);
+    }
 
     auto startRecompose = std::chrono::system_clock::now();
-    iDwt2D(levels, COMPRESSION_LEVELS_2D,
+    iDwt2D(COMPRESSION_LEVELS_2D,
            device_output_array_2D,
            compressionResultMeta,
            device_low_inverse_filter_array_2D,
@@ -268,6 +293,9 @@ void test2D(int64 signalLength2D, int64 compressionLevels) {
     std::cout << diff.count() << " 2D De-Compression Total s\n";
     std::cerr<<std::endl;
 
-    printResult_2D(host_output_array_2D);
-    //verifyReconstructedSignal2D();
+    if(PRINT_INTERMEDIATE) {
+        printResult_2D(host_output_array_2D);
+    }
+
+    verifyReconstructedSignal2D();
 }

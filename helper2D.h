@@ -55,7 +55,8 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
     int fillLeft = filterSideWidth - xIndex;
     int filledL = 0;
     for (int i = 0; i < fillLeft; i++) {
-        vals[i]= inputSignal[yIndex * imageWidth];
+        int64 mirrorDistance = fillLeft - i;
+        vals[i]= inputSignal[yIndex * imageWidth + mirrorDistance];
         filledL += 1;
     }
 
@@ -63,7 +64,8 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
     int filledR = 0;
 
     for (int i = 0; i < fillRight; i++) {
-        vals[8 - i]= inputSignal[yIndex * imageWidth + inputImageMeta.xEnd - 1];
+        int64 mirrorDistance = fillRight - i;
+        vals[8 - i]= inputSignal[yIndex * imageWidth + inputImageMeta.xEnd - 1 - mirrorDistance];
         filledR += 1;
     }
 
@@ -119,14 +121,16 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
     int fillLeft = filterSideWidth - yIndex;
     int filledL = 0;
     for (int i = 0; i < fillLeft; i++) {
-        vals[i] = inputSignal[xIndex ];
+        int64 mirrorDistance = fillLeft - i;
+        vals[i] = inputSignal[imageWidth * mirrorDistance + xIndex];
         filledL += 1;
     }
 
     int fillRight = yIndex - (height - filterSideWidth) + 1;
     int filledR = 0;
     for (int i = 0; i < fillRight; i++) {
-        vals[8 - i] = inputSignal[(height - 1) * imageWidth + xIndex ];
+        int64 mirrorDistance = fillRight - i;
+        vals[8 - i] = inputSignal[(height - 1 - mirrorDistance) * imageWidth + xIndex ];
         filledR += 1;
     }
 
@@ -164,7 +168,7 @@ int64 calculateExtendedSignalLength(int64 width, int64 height, int64 filterSize,
            height * (width + filterSideSize * 2) ;
 }
 
-struct ImageMeta dwt2D(MyVector & L, int levelsToCompress,
+struct ImageMeta dwt2D(int levelsToCompress,
                        double * deviceInputSignal,
                        struct ImageMeta inputImageMeta,
                        double * deviceLowFilter,
@@ -281,17 +285,17 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
     int filledL = 0;
 
     for (int i = 0; i < fillLeft; i++) {
-        valsLow[i] = inputSignal[(inputImageMeta.yStart) * stride + (inputImageMeta.xStart + xIndexLocal) ];
-        //valsLow[i] = 1.0;
+        int64 mirrorDistance = fillLeft - i;
+        valsLow[i] = inputSignal[(inputImageMeta.yStart + mirrorDistance) * stride + (inputImageMeta.xStart + xIndexLocal) ];
         filledL += 1;
     }
 
     int fillRight = lowCoefficientIndex - (highCoefficientOffsetY - filterSideWidth - 1);
     int filledR = 0;
     for (int i = 0; i < fillRight; i++) {
-        valsLow[8 - i] = inputSignal[(inputImageMeta.yStart + highCoefficientOffsetY - 1) * stride
+        int64 mirrorDistance = fillRight - i;
+        valsLow[8 - i] = inputSignal[(inputImageMeta.yStart + highCoefficientOffsetY - 1 - mirrorDistance) * stride
                                      + (inputImageMeta.xStart + xIndexLocal) ];
-        //valsLow[9 - i] = 1.0;
         filledR += 1;
     }
 
@@ -299,14 +303,15 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
         valsLow[i] = inputSignal[(inputImageMeta.yStart + lowCoefficientIndex - filterSideWidth + i) * stride
                                  + (inputImageMeta.xStart + xIndexLocal) ];
     }
-
-    sum += lowFilter[yLowStart] * valsLow[0];
+    
+    int64 offsetVals = 2;
+    sum += lowFilter[yLowStart] * valsLow[0 + offsetVals];
     yLowStart -= 2;
-    sum += lowFilter[yLowStart] * valsLow[1];
+    sum += lowFilter[yLowStart] * valsLow[1+ offsetVals];
     yLowStart -= 2;
-    sum += lowFilter[yLowStart] * valsLow[2];
+    sum += lowFilter[yLowStart] * valsLow[2+ offsetVals];
     yLowStart -= 2;
-    sum += lowFilter[yLowStart] * valsLow[3];
+    sum += lowFilter[yLowStart] * valsLow[3+ offsetVals];
 
     //high
     double valsHigh[9];
@@ -315,7 +320,8 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
     filledL = 0;
 
     for (int i = 0; i < fillLeft; i++) {
-        valsHigh[i] = inputSignal[(inputImageMeta.yStart + highCoefficientOffsetY) * stride
+        int64 mirrorDistance = fillLeft - i;
+        valsHigh[i] = inputSignal[(inputImageMeta.yStart + highCoefficientOffsetY + mirrorDistance) * stride
                                   + (inputImageMeta.xStart + xIndexLocal) ];
         //valsHigh[i] = 1.0;
         filledL += 1;
@@ -324,7 +330,8 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
     fillRight = highCoefficientIndex - (highCoefficientOffsetY - filterSideWidth - 1);
     filledR = 0;
     for (int i = 0; i < fillRight; i++) {
-        valsHigh[8 - i] = inputSignal[(inputImageMeta.yStart + 2 * highCoefficientOffsetY - 1) * stride
+        int64 mirrorDistance = fillRight - i;
+        valsHigh[8 - i] = inputSignal[(inputImageMeta.yStart + 2 * highCoefficientOffsetY - 1 - mirrorDistance) * stride
                                       + (inputImageMeta.xStart + xIndexLocal) ];
         filledR += 1;
     }
@@ -334,13 +341,13 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
                                   + (inputImageMeta.xStart + xIndexLocal) ];
     }
 
-    sum += highFilter[yHighStart] * valsHigh[0];
+    sum += highFilter[yHighStart] * valsHigh[0 + offsetVals];
     yHighStart -= 2;
-    sum += highFilter[yHighStart] * valsHigh[1];
+    sum += highFilter[yHighStart] * valsHigh[1+ offsetVals];
     yHighStart -= 2;
-    sum += highFilter[yHighStart] * valsHigh[2];
+    sum += highFilter[yHighStart] * valsHigh[2+ offsetVals];
     yHighStart -= 2;
-    sum += highFilter[yHighStart] * valsHigh[3];
+    sum += highFilter[yHighStart] * valsHigh[3+ offsetVals];
 
     int64 outputIndex = (yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + xIndexLocal);
     reconstructedSignal[outputIndex] = sum;
@@ -389,28 +396,30 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
     int filledL = 0;
 
     for (int i = 0; i < fillLeft; i++) {
-        valsLow[i] = inputSignal[(yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart) ];
+        int64 mirrorDistance = fillLeft - i;
+        valsLow[i] = inputSignal[(yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + mirrorDistance) ];
         filledL += 1;
     }
 
     int fillRight = lowCoefficientIndex - (highCoefficientOffsetX - filterSideWidth - 1);
     int filledR = 0;
     for (int i = 0; i < fillRight; i++) {
-        valsLow[8 - i] = inputSignal[(yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + highCoefficientOffsetX - 1 ) ];
+        int64 mirrorDistance = fillRight - i;
+        valsLow[8 - i] = inputSignal[(yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + highCoefficientOffsetX - 1 - mirrorDistance) ];
         filledR += 1;
     }
 
     for (int i = filledL; i < 9 - filledR; i++) {
         valsLow[i] = inputSignal[(yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + lowCoefficientIndex - filterSideWidth + i) ];
     }
-
-    sum += lowFilter[yLowStart] * valsLow[0];
+    int64 offsetVals = 2;
+    sum += lowFilter[yLowStart] * valsLow[0 + offsetVals];
     yLowStart -= 2;
-    sum += lowFilter[yLowStart] * valsLow[1];
+    sum += lowFilter[yLowStart] * valsLow[1+ offsetVals];
     yLowStart -= 2;
-    sum += lowFilter[yLowStart] * valsLow[2];
+    sum += lowFilter[yLowStart] * valsLow[2+ offsetVals];
     yLowStart -= 2;
-    sum += lowFilter[yLowStart] * valsLow[3];
+    sum += lowFilter[yLowStart] * valsLow[3+ offsetVals];
 
     //high
     double valsHigh[9];
@@ -419,14 +428,16 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
     filledL = 0;
 
     for (int i = 0; i < fillLeft; i++) {
-        valsHigh[i] = inputSignal[(yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + highCoefficientOffsetX ) ];
+        int64 mirrorDistance = fillLeft - i;
+        valsHigh[i] = inputSignal[(yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + highCoefficientOffsetX + mirrorDistance) ];
         filledL += 1;
     }
 
     fillRight = highCoefficientIndex - (highCoefficientOffsetX - filterSideWidth - 1);
     filledR = 0;
     for (int i = 0; i < fillRight; i++) {
-        valsHigh[8 - i] = inputSignal[(yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + 2 * highCoefficientOffsetX - 1) ];
+        int64 mirrorDistance = fillRight - i;
+        valsHigh[8 - i] = inputSignal[(yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + 2 * highCoefficientOffsetX - 1 - mirrorDistance) ];
         filledR += 1;
     }
 
@@ -434,20 +445,19 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
         valsHigh[i] = inputSignal[(yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + highCoefficientIndex - filterSideWidth + i + highCoefficientOffsetX) ];
     }
 
-    sum += highFilter[yHighStart] * valsHigh[0];
+    sum += highFilter[yHighStart] * valsHigh[0+ offsetVals];
     yHighStart -= 2;
-    sum += highFilter[yHighStart] * valsHigh[1];
+    sum += highFilter[yHighStart] * valsHigh[1+ offsetVals];
     yHighStart -= 2;
-    sum += highFilter[yHighStart] * valsHigh[2];
+    sum += highFilter[yHighStart] * valsHigh[2+ offsetVals];
     yHighStart -= 2;
-    sum += highFilter[yHighStart] * valsHigh[3];
+    sum += highFilter[yHighStart] * valsHigh[3+ offsetVals];
 
     int64 outputIndex = (yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + xIndexLocal);
-    reconstructedSignal[outputIndex] = valsHigh[3];
     reconstructedSignal[outputIndex] = sum;
 }
 
-void iDwt2D(MyVector & L, int levelsToCompressUncompress,
+void iDwt2D(int levelsToCompressUncompress,
             double * deviceInputSignal,
             struct ImageMeta & inputImageMeta,
             double * deviceILowFilter,
