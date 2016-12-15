@@ -67,6 +67,12 @@ __global__ void convolveWavelet(double * filter, int64 filterLength,
 
 #if defined SHARED_MEMORY
     // load into shared memory
+    __shared__ double sfilter[9]; //max per
+
+    if(int64(threadIdx.x) < int64(9)) {
+        sfilter[threadIdx.x] = filter[threadIdx.x];
+    }
+
     __shared__ double s[2048 + 8]; //max per
     s[threadIdx.x * 2] = inputSignal[inputIndex - (filterLength / 2)];
     s[threadIdx.x * 2 + 1] = inputSignal[inputIndex - (filterLength / 2) + 1];
@@ -92,7 +98,7 @@ __global__ void convolveWavelet(double * filter, int64 filterLength,
     for (int64 i = 0; i < filterLength; i++) {
 
 #if defined SHARED_MEMORY
-        sum += filter[i] * s[threadIdx.x * 2 + i];
+        sum += sfilter[i] * s[threadIdx.x * 2 + i];
 #else
         sum += filter[i] * inputSignal[inputIndex - (filterLength / 2) + i];
 #endif
