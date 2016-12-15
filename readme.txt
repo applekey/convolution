@@ -9,3 +9,6 @@
 2, test case, use 1 for 1d and 2 for 2d
 0, 0 or 1, to either print the results of the decompose/reconstruct, 0 is for silent
 
+
+#known bugs
+shared memory , for high levels of compression, it might fail.  Make sure after x compression, the image size is not less than 2048.
