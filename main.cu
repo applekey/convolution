@@ -213,20 +213,19 @@ void verifyReconstructedSignal() {
     double rmse = sigGenerator.calculateRMSE(host_reconstruct_output_array, SIGNAL_LENGTH);
     std::cerr<<"RMSE: "<<rmse<<std::endl;
 
-    return;
-    /*bool allCorrect = true;*/
-    /*std::cerr << "Verifiying Signal" << std::endl;*/
-    /*for (int64 i = 0 ; i < SIGNAL_LENGTH; i++) {*/
-        /*if (!isCloseTo(host_reconstruct_output_array[i], 1, 0.01)) {*/
-            /*allCorrect = false;*/
-        /*}*/
-    /*}*/
+    bool allCorrect = true;
+    std::cerr << "Verifiying Signal" << std::endl;
+    for (int64 i = 0 ; i < SIGNAL_LENGTH; i++) {
+        if (!isCloseTo(host_reconstruct_output_array[i], sigGenerator.valueGivenIndex(i, SIGNAL_LENGTH), 0.01)) {
+            allCorrect = false;
+        }
+    }
 
-    /*if(allCorrect) {*/
-        /*std::cerr<<"all correct 1D"<<std::endl;*/
-    /*} else {*/
-        /*std::cerr<<"reconstruction error 1D"<<std::endl;*/
-    /*}*/
+    if(allCorrect) {
+        std::cerr<<"all correct 1D"<<std::endl;
+    } else {
+        std::cerr<<"reconstruction error 1D"<<std::endl;
+    }
 }
 
 void freeMemory() {
