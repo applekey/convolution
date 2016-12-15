@@ -71,22 +71,19 @@ __global__ void convolveWavelet(double * filter, int64 filterLength,
     s[threadIdx.x * 2] = inputSignal[inputIndex - (filterLength / 2)];
     s[threadIdx.x * 2 + 1] = inputSignal[inputIndex - (filterLength / 2) + 1];
 
-#if defined BIG
     if(threadIdx.x == 1023) {
         int64 startT = 1024;
         for(int i = 0; i < 8; i++) {
             s[startT * 2 + i*2] = inputSignal[inputIndex - (filterLength / 2) + (i+1)*2];
             s[startT * 2 + 1 + i*2] = inputSignal[inputIndex - (filterLength / 2) + (i+1)*2 + 1];
         }
-    }
-#else
-    if(threadIdx.x == signalLength - 1) {
+    } else if(threadIdx.x == signalLength - 1) {
         for(int i = 0; i < 8; i++) {
             s[signalLength * 2 + i*2] = inputSignal[inputIndex - (filterLength / 2) + (i+1)*2];
             s[signalLength * 2 + 1 + i*2] = inputSignal[inputIndex - (filterLength / 2) + (i+1)*2 + 1];
         }
     }
-#endif
+
     __syncthreads();
 #endif
 
