@@ -203,6 +203,20 @@ void verifyReconstructedSignal2D() {
     double rmse = sigGenerator2D.calculateRMSE(host_output_array_2D, sigLength);
     std::cerr<<"RMSE: "<<rmse<<std::endl;
 
+    bool allCorrect = true;
+    std::cerr << "Verifiying Signal 2D" << std::endl;
+
+    for (int64 i = 0 ; i < sigLength; i++) {
+        if (!isCloseTo2D(host_output_array_2D[i], sigGenerator2D.valueGivenIndex(i, sigLength), 0.1)) {
+            allCorrect = false;
+        }
+    }
+
+    if(allCorrect) {
+        std::cerr<<"all correct 2D"<<std::endl;
+    } else {
+        std::cerr<<"reconstruction error 2D"<<std::endl;
+    }
     return;
 }
 

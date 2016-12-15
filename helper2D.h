@@ -1,6 +1,9 @@
 #include "helper.h"
 #define OFFSETVAL 2
-
+#define HIGH_LEFT 1
+#define HIGH_RIGHT 0
+#define LOW_LEFT 0 
+#define LOW_RIGHT 1 
 
 struct vec2 {
     vec2(int x, int y) {
@@ -286,7 +289,7 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
     int filledL = 0;
 
     for (int i = 0; i < fillLeft; i++) {
-        int64 mirrorDistance = fillLeft - i;
+        int64 mirrorDistance = fillLeft - i - LOW_LEFT;
         valsLow[i] = inputSignal[(inputImageMeta.yStart + mirrorDistance) * stride + (inputImageMeta.xStart + xIndexLocal) ];
         filledL += 1;
     }
@@ -294,7 +297,7 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
     int fillRight = lowCoefficientIndex - (highCoefficientOffsetY - filterSideWidth - 1);
     int filledR = 0;
     for (int i = 0; i < fillRight; i++) {
-        int64 mirrorDistance = fillRight - i;
+        int64 mirrorDistance = fillRight - i - LOW_RIGHT;
         valsLow[8 - i] = inputSignal[(inputImageMeta.yStart + highCoefficientOffsetY - 1 - mirrorDistance) * stride
                                      + (inputImageMeta.xStart + xIndexLocal) ];
         filledR += 1;
@@ -321,17 +324,16 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
     filledL = 0;
 
     for (int i = 0; i < fillLeft; i++) {
-        int64 mirrorDistance = fillLeft - i;
+        int64 mirrorDistance = fillLeft - i - HIGH_LEFT;
         valsHigh[i] = inputSignal[(inputImageMeta.yStart + highCoefficientOffsetY + mirrorDistance) * stride
                                   + (inputImageMeta.xStart + xIndexLocal) ];
-        //valsHigh[i] = 1.0;
         filledL += 1;
     }
 
     fillRight = highCoefficientIndex - (highCoefficientOffsetY - filterSideWidth - 1);
     filledR = 0;
     for (int i = 0; i < fillRight; i++) {
-        int64 mirrorDistance = fillRight - i;
+        int64 mirrorDistance = fillRight - i - HIGH_RIGHT;
         valsHigh[8 - i] = inputSignal[(inputImageMeta.yStart + 2 * highCoefficientOffsetY - 1 - mirrorDistance) * stride
                                       + (inputImageMeta.xStart + xIndexLocal) ];
         filledR += 1;
@@ -397,7 +399,7 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
     int filledL = 0;
 
     for (int i = 0; i < fillLeft; i++) {
-        int64 mirrorDistance = fillLeft - i;
+        int64 mirrorDistance = fillLeft - i - LOW_LEFT;
         valsLow[i] = inputSignal[(yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + mirrorDistance) ];
         filledL += 1;
     }
@@ -405,7 +407,7 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
     int fillRight = lowCoefficientIndex - (highCoefficientOffsetX - filterSideWidth - 1);
     int filledR = 0;
     for (int i = 0; i < fillRight; i++) {
-        int64 mirrorDistance = fillRight - i;
+        int64 mirrorDistance = fillRight - i - LOW_RIGHT;
         valsLow[8 - i] = inputSignal[(yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + highCoefficientOffsetX - 1 - mirrorDistance) ];
         filledR += 1;
     }
@@ -429,7 +431,7 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
     filledL = 0;
 
     for (int i = 0; i < fillLeft; i++) {
-        int64 mirrorDistance = fillLeft - i;
+        int64 mirrorDistance = fillLeft - i - HIGH_LEFT;
         valsHigh[i] = inputSignal[(yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + highCoefficientOffsetX + mirrorDistance) ];
         filledL += 1;
     }
@@ -437,7 +439,7 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
     fillRight = highCoefficientIndex - (highCoefficientOffsetX - filterSideWidth - 1);
     filledR = 0;
     for (int i = 0; i < fillRight; i++) {
-        int64 mirrorDistance = fillRight - i;
+        int64 mirrorDistance = fillRight - i - HIGH_RIGHT;
         valsHigh[8 - i] = inputSignal[(yIndexLocal + inputImageMeta.yStart) * stride + (inputImageMeta.xStart + 2 * highCoefficientOffsetX - 1 - mirrorDistance) ];
         filledR += 1;
     }
