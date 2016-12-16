@@ -10,3 +10,6 @@
 
 ##Notes 
 for 2d, for side width greater than 1024, the n must be a constant of 1024, ex 2048 or 4096.
+
+##Results
+https://docs.google.com/spreadsheets/d/1c2IpR5sYPFhTryK8pQ-2SapmlLm9boKN1xCwts-3L44/edit#gid=0
