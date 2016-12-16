@@ -8,3 +8,5 @@
 2, test case, use 1 for 1d and 2 for 2d
 0, 0 or 1, to either print the results of the decompose/reconstruct, 0 is for silent
 
+##Notes 
+for 2d, for side width greater than 1024, the n must be a constant of 1024, ex 2048 or 4096.

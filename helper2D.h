@@ -211,9 +211,11 @@ struct ImageMeta dwt2D(int levelsToCompress,
         } else {
             //low filter
             int64 maxThreadWidth = blockWidth;
+
             if(maxThreadWidth >= 1024) {
                 maxThreadWidth = 1024;
             }
+
             convolve2D_Vertical <<< blocks, threads>>> (currentInputSignal, convolveImagSize,
                     deviceLowFilter, filterLength,
                     deviceOutputCoefficients, imageMetaLow, 0, 0, maxThreadWidth);
