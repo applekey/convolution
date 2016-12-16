@@ -85,7 +85,8 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
 /*---------------------------------VERT---------------------------------------*/
 __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
                                     double * filter, int filterLength,
-                                    double * output, struct ImageMeta inputImageMeta, int64 offset, int64 highOffset) {
+                                    double * output, struct ImageMeta inputImageMeta, 
+                                    int64 offset, int64 highOffset, int64 maxThreadWidth) {
     int64 origIndex = calculateIndex();
     int64 index = origIndex;
 
@@ -97,8 +98,16 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
     int64 stride = inputImageMeta.xEnd;
     int64 height = inputImageMeta.yEnd;
 
-    int64 yIndex = index / stride * 2 + highOffset;
-    int64 xIndex = index % stride;
+    //order is using blocks of maxThreadWidth 
+
+    int64 yRoll =  index / maxThreadWidth * 2 + highOffset;
+    int64 yIndex = yRoll % height;
+    int64 yRollX =  yRoll / height;
+    int64 xIndex = (index % maxThreadWidth) + maxThreadWidth * yRollX;
+
+    //old linear method
+    //int64 yIndex = index / stride * 2 + highOffset;
+    //int64 xIndex = index % stride;
 
     int64 filterSideWidth = filterLength / 2;
 
@@ -201,14 +210,18 @@ struct ImageMeta dwt2D(int levelsToCompress,
 
         } else {
             //low filter
+            int64 maxThreadWidth = blockWidth;
+            if(maxThreadWidth >= 1024) {
+                maxThreadWidth = 1024;
+            }
             convolve2D_Vertical <<< blocks, threads>>> (currentInputSignal, convolveImagSize,
                     deviceLowFilter, filterLength,
-                    deviceOutputCoefficients, imageMetaLow, 0, 0);
+                    deviceOutputCoefficients, imageMetaLow, 0, 0, maxThreadWidth);
 
             //high filter
             convolve2D_Vertical <<< blocks, threads>>> (currentInputSignal, convolveImagSize,
                     deviceHighFilter, filterLength,
-                    deviceOutputCoefficients, imageMetaHigh, blockHeight / 2, 1);
+                    deviceOutputCoefficients, imageMetaHigh, blockHeight / 2, 1, maxThreadWidth);
         }
 
         auto endLocal = std::chrono::system_clock::now();
