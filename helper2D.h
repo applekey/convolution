@@ -1,4 +1,5 @@
 #include "helper.h"
+#define MAX_SIDE 1024
 #define OFFSETVAL 2
 #define HIGH_LEFT 1
 #define HIGH_RIGHT 0
@@ -212,8 +213,8 @@ struct ImageMeta dwt2D(int levelsToCompress,
             //low filter
             int64 maxThreadWidth = blockWidth;
 
-            if(maxThreadWidth >= 1024) {
-                maxThreadWidth = 1024;
+            if(maxThreadWidth > MAX_SIDE) {
+                maxThreadWidth = MAX_SIDE;
             }
 
             convolve2D_Vertical <<< blocks, threads>>> (currentInputSignal, convolveImagSize,
