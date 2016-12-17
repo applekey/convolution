@@ -1,2 +1,4 @@
 /build
 *.swp
+/CMakeFiles
+CMakeCache.txt
