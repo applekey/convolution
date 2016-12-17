@@ -248,7 +248,8 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
                                         int64 totalSignalLength,
                                         double * lowFilter, double * highFilter,
                                         struct ImageMeta inputImageMeta,
-                                        double * reconstructedSignal) {
+                                        double * reconstructedSignal,
+                                        int64 maxThreadWidth) {
     int64 index = calculateIndex();
 
     if (index >= totalSignalLength) {
@@ -256,10 +257,16 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
     }
 
     int64 stride = inputImageMeta.imageWidth;
-
     int64 blockWidth = inputImageMeta.xEnd;
-    int64 yIndexLocal = index / blockWidth;
-    int64 xIndexLocal = index % blockWidth;
+    int64 blockHeight = inputImageMeta.yEnd;
+
+    int64 yRoll =  index / maxThreadWidth;
+    int64 yIndexLocal = yRoll % blockHeight;
+    int64 yRollX =  yRoll / blockHeight;
+    int64 xIndexLocal = (index % maxThreadWidth) + maxThreadWidth * yRollX;
+
+    //int64 yIndexLocal = index / blockWidth;
+    //int64 xIndexLocal = index % blockWidth;
 
     int64 filterSideWidth = filterLength / 2;
 
@@ -491,11 +498,19 @@ void iDwt2D(int levelsToCompressUncompress,
             int threads;
             dim3 blocks;
             calculateBlockSize(totalNumElements, threads, blocks);
+
+            int64 maxThreadWidth = currentImageMeta.xEnd;
+
+            if(maxThreadWidth > MAX_SIDE) {
+                maxThreadWidth = MAX_SIDE;
+            }
+
             inverseConvolveVertical <<< blocks, threads>>>(deviceInputSignal, filterLength,
                     totalNumElements,
                     deviceILowFilter, deviceIHighFilter,
                     currentImageMeta,
-                    deviceTmpMemory);
+                    deviceTmpMemory,
+                    maxThreadWidth);
         }
         //cudaDeviceSynchronize();
 
