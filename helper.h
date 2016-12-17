@@ -73,7 +73,7 @@ __global__ void convolveWavelet(double * filter, int64 filterLength,
         sfilter[threadIdx.x] = filter[threadIdx.x];
     }
 
-    __shared__ double s[2048 + 8]; //max per
+    __shared__ double s[2048 + 16]; //max per
     s[threadIdx.x * 2] = inputSignal[inputIndex - (filterLength / 2)];
     s[threadIdx.x * 2 + 1] = inputSignal[inputIndex - (filterLength / 2) + 1];
 

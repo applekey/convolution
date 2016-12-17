@@ -29,6 +29,7 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
     if (index >= signalLength) {
         return;
     }
+
     int64 imageWidth = inputImageMeta.imageWidth;
     int64 stride = inputImageMeta.xEnd;
 
@@ -36,6 +37,31 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
     int64 xIndex = (index * 2) % stride + highOffset;
 
     int64 filterSideWidth = filterLength / 2;
+
+#if defined SHARED_MEMORY
+    __shared__ double sfilter[9]; //max per
+    if(int64(threadIdx.x) < int64(9)) {
+        sfilter[threadIdx.x] = filter[threadIdx.x];
+    }
+    
+    __shared__ double s[2048 + 16]; //max per
+    if(stride > 2048) {
+    s[threadIdx.x * 2] = inputSignal[yIndex * imageWidth + xIndex - filterSideWidth];
+    s[threadIdx.x * 2 + 1] = inputSignal[yIndex * imageWidth + xIndex - filterSideWidth + 1];
+    
+    if(threadIdx.x == 1023) {
+        int64 startT = 1024;
+        //there might be a bug here
+        for(int i = 0; i < 8; i++) {
+                
+                s[startT * 2 + i*2] = inputSignal[yIndex * imageWidth + xIndex - filterSideWidth + (i+1)*2];
+                s[startT * 2 + 1 + i*2] = inputSignal[yIndex * imageWidth + xIndex - filterSideWidth + (i+1)*2 + 1];
+        }
+    }
+    }
+    
+    __syncthreads();
+#endif
 
     double vals[9];
 
@@ -57,8 +83,21 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
     }
 
     for (int i = filledL; i < 9 - filledR; i++) {
+
+#if defined SHARED_MEMORY
+    if(stride > 2048) {
+        vals[i] = s[threadIdx.x * 2 + i]; 
+    } else {
         vals[i] = inputSignal[yIndex * imageWidth + xIndex - filterSideWidth + i ];
     }
+#else
+        vals[i] = inputSignal[yIndex * imageWidth + xIndex - filterSideWidth + i ];
+#endif
+    }
+
+#if defined SHARED_MEMORY
+   filter = sfilter; 
+#endif
 
     double sum = 0.0;
     //-4
@@ -96,7 +135,6 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
     }
 
     int64 imageWidth = inputImageMeta.imageWidth;
-    int64 stride = inputImageMeta.xEnd;
     int64 height = inputImageMeta.yEnd;
 
     //order is using blocks of maxThreadWidth 
@@ -107,11 +145,19 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
     int64 xIndex = (index % maxThreadWidth) + maxThreadWidth * yRollX;
 
     //old linear method
+    //int64 stride = inputImageMeta.xEnd;
     //int64 yIndex = index / stride * 2 + highOffset;
     //int64 xIndex = index % stride;
 
     int64 filterSideWidth = filterLength / 2;
 
+#if defined SHARED_MEMORY
+    __shared__ double sfilter[9]; //max per
+    if(int64(threadIdx.x) < int64(9)) {
+        sfilter[threadIdx.x] = filter[threadIdx.x];
+    }
+    __syncthreads();
+#endif
     double vals[9];
 
     int fillLeft = filterSideWidth - yIndex;
@@ -133,6 +179,10 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
     for (int i = filledL; i < 9 - filledR; i++) {
         vals[i] = inputSignal[(yIndex - filterSideWidth + i) * imageWidth + xIndex ];
     }
+
+#if defined SHARED_MEMORY
+   filter = sfilter; 
+#endif
 
     double sum = 0.0;
     //-4
