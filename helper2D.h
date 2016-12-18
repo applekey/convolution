@@ -61,16 +61,18 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
     }
 
     double * filter;
+    double sum = 0.0;
     if(xIndex % 2 == 0) {
         filter = lowFilter;
         offset = 0;
+        //-4
+        sum += vals[0] * filter[0];
+        //4
+        sum += vals[8] * filter[8];
     } else {
         filter = highFilter;
     }
 
-    double sum = 0.0;
-    //-4
-    sum += vals[0] * filter[0];
     //-3
     sum += vals[1] * filter[1];
     //-2
@@ -85,8 +87,6 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
     sum += vals[6] * filter[6];
     //3
     sum += vals[7] * filter[7];
-    //4
-    sum += vals[8] * filter[8];
 
     output[yIndex * imageWidth + xIndex / 2 + offset] = sum;
 }
@@ -144,16 +144,19 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
     }
 
     double * filter;
+    double sum = 0.0;
+
     if(yIndex % 2 == 0) {
         filter = lowFilter;
         offset = 0;
+        //-4
+        sum += vals[0] * filter[0];
+        ////4
+        sum += vals[8] * filter[8];
     } else {
         filter = highFilter;
     } 
 
-    double sum = 0.0;
-    //-4
-    sum += vals[0] * filter[0];
     //-3
     sum += vals[1] * filter[1];
     //-2
@@ -168,8 +171,6 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
     sum += vals[6] * filter[6];
     ////3
     sum += vals[7] * filter[7];
-    ////4
-    sum += vals[8] * filter[8];
 
     output[(yIndex / 2 + offset)* imageWidth + xIndex] = sum;
 }
