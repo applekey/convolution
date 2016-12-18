@@ -105,7 +105,6 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
     }
 
     int64 imageWidth = inputImageMeta.imageWidth;
-    int64 stride = inputImageMeta.xEnd;
     int64 height = inputImageMeta.yEnd;
 
     //order is using blocks of maxThreadWidth 
@@ -206,8 +205,6 @@ struct ImageMeta dwt2D(int levelsToCompress,
         int threads;
         dim3 blocks;
         //set up output image meta
-        struct ImageMeta imageMetaHigh = currentImageMeta;
-        struct ImageMeta imageMetaLow = currentImageMeta;
         int64 convolveImagSize = convolveImagSize = blockWidth * blockHeight;
 
         //convolve the image
@@ -218,7 +215,7 @@ struct ImageMeta dwt2D(int levelsToCompress,
             //low filter
             convolve2D_Horizontal <<< blocks, threads>>> (currentInputSignal, convolveImagSize,
                     deviceLowFilter, deviceHighFilter, filterLength,
-                    deviceTmpMemory, imageMetaLow, blockWidth/2);
+                    deviceTmpMemory, currentImageMeta, blockWidth/2);
 
             currentInputSignal = deviceTmpMemory;
 
@@ -232,7 +229,7 @@ struct ImageMeta dwt2D(int levelsToCompress,
 
             convolve2D_Vertical <<< blocks, threads>>> (currentInputSignal, convolveImagSize,
                     deviceLowFilter, deviceHighFilter, filterLength,
-                    deviceOutputCoefficients, imageMetaLow, blockHeight / 2, maxThreadWidth);
+                    deviceOutputCoefficients, currentImageMeta, blockHeight / 2, maxThreadWidth);
 
         }
 
