@@ -23,7 +23,8 @@ struct ImageMeta {
 /*------------------------------------------------------HORIZONTAL------------------------------*/
 __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
                                       double * lowFilter, double * highFilter, int filterLength,
-                                      double * output, struct ImageMeta inputImageMeta, int64 offset) {
+                                      double * output, struct ImageMeta inputImageMeta, int64 offset,
+                                      int * mirrorIndex) {
     int64 index = calculateIndex();
 
     if (index >= signalLength) {
@@ -44,40 +45,37 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
         sLowfilter[threadIdx.x] = lowFilter[threadIdx.x];
         sHighfilter[threadIdx.x] = highFilter[threadIdx.x];
     }
+
+    int64 indexOffset = mirrorIndex[xIndex]; 
+
     __shared__ double s[1024 + 8]; //max per
-    s[threadIdx.x] = inputSignal[yIndex * imageWidth + xIndex - filterSideWidth]; 
-    if(threadIdx.x == 1023) {
-        int64 startT = 1024;
-        for(int i = 0; i < 8; i++) {    
-            s[startT + i] = inputSignal[yIndex * imageWidth + xIndex - filterSideWidth + (i+1)];
+    if(stride >= 1024) {
+        s[threadIdx.x] = inputSignal[yIndex * imageWidth + xIndex - filterSideWidth + indexOffset];
+        if(threadIdx.x == 1023) {
+            int64 startT = 1024;
+            //there might be a bug here
+            for(int i = 0; i < 8; i++) {
+                indexOffset = mirrorIndex[xIndex  + 1 + i]; 
+                s[startT + i] = inputSignal[yIndex * imageWidth + xIndex - filterSideWidth + indexOffset + i + 1];
+            }
         }
     }
+
     __syncthreads();
 #endif
+
     double vals[9];
 
-    int fillLeft = filterSideWidth - xIndex;
-    int filledL = 0;
-    for (int i = 0; i < fillLeft; i++) {
-        int64 mirrorDistance = fillLeft - i;
-        vals[i]= inputSignal[yIndex * imageWidth + mirrorDistance];
-        filledL += 1;
-    }
-
-    int fillRight = xIndex - (stride - filterSideWidth) + 1;
-    int filledR = 0;
-
-    for (int i = 0; i < fillRight; i++) {
-        int64 mirrorDistance = fillRight - i;
-        vals[8 - i]= inputSignal[yIndex * imageWidth + inputImageMeta.xEnd - 1 - mirrorDistance];
-        filledR += 1;
-    }
-
-    for (int i = filledL; i < 9 - filledR; i++) {
+    for (int i = 0; i < 9 ; i++) {
+        int64 indexOffset = mirrorIndex[xIndex  + i]; 
 #if defined SHARED_MEMORY
-        vals[i] = s[threadIdx.x + i];
+        if(stride >= 1024) {
+            vals[i] = s[threadIdx.x + i];
+        } else {
+            vals[i] = inputSignal[yIndex * imageWidth + xIndex - filterSideWidth + i + indexOffset];
+        }
 #else
-        vals[i] = inputSignal[yIndex * imageWidth + xIndex - filterSideWidth + i ];
+        vals[i] = inputSignal[yIndex * imageWidth + xIndex - filterSideWidth + i + indexOffset];
 #endif
     }
 
@@ -234,7 +232,8 @@ struct ImageMeta dwt2D(int levelsToCompress,
                        int64 filterLength,
                        struct ImageMeta & outputImageMeta,
                        double * deviceOutputCoefficients,
-                       double * deviceTmpMemory) {
+                       double * deviceTmpMemory, 
+                       int * mirrorIndex, int * hostIndex) {
 
     struct ImageMeta currentImageMeta = inputImageMeta;
     double * currentInputSignal = deviceInputSignal;
@@ -260,7 +259,7 @@ struct ImageMeta dwt2D(int levelsToCompress,
             //low filter
             convolve2D_Horizontal <<< blocks, threads>>> (currentInputSignal, convolveImagSize,
                     deviceLowFilter, deviceHighFilter, filterLength,
-                    deviceTmpMemory, currentImageMeta, blockWidth/2);
+                    deviceTmpMemory, currentImageMeta, blockWidth/2, mirrorIndex);
 
             currentInputSignal = deviceTmpMemory;
 
@@ -289,6 +288,14 @@ struct ImageMeta dwt2D(int levelsToCompress,
             blockWidth = currentImageMeta.xEnd;
             blockHeight = currentImageMeta.yEnd;
             currentInputSignal = deviceOutputCoefficients;
+            // move index coefficients
+            hostIndex[currentImageMeta.xEnd] = hostIndex[0];
+            hostIndex[currentImageMeta.xEnd + 1] = hostIndex[1];
+            hostIndex[currentImageMeta.xEnd + 2] = hostIndex[2];
+            hostIndex[currentImageMeta.xEnd + 3] = hostIndex[3];
+            hostIndex += currentImageMeta.xEnd;
+            mirrorIndex += currentImageMeta.xEnd;
+            cudaMemcpy(mirrorIndex, hostIndex, sizeof(int) * 4, cudaMemcpyHostToDevice);
         }
         isHorizontal = !isHorizontal;
 

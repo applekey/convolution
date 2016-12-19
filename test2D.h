@@ -1,5 +1,6 @@
 #include "waveletFilter.h"
 #include "helper2D.h"
+#include <cstring>
 
 int64 SIGNAL_LENGTH_2D = 0;
 int64 COMPRESSION_LEVELS_2D = 0;
@@ -220,6 +221,33 @@ void verifyReconstructedSignal2D() {
     return;
 }
 
+int * host_index; 
+int * device_index;
+void generateIndexArray() {
+    int64 indexLen = SIGNAL_LENGTH_2D + (9 / 2) * 2;
+    int64 num_bytes = indexLen * sizeof(int);
+
+    host_index = (int *)malloc(num_bytes);
+    std::memset(host_index, 0, num_bytes);
+
+    int rightMirror = 0;
+    for(int64 i = 0; i < indexLen; i++) {
+        if(i < 4) {
+            host_index[i] = ((4 - i) * 2);
+        }
+        else if(i >= indexLen - 4) {
+            host_index[i] = -((i - (indexLen -4) + 1) * 2);
+        } 
+    }
+
+    //for(int64 i = 0; i < indexLen; i++) {
+        //std::cerr<<host_index[i]<<" ";
+    //}
+
+    cudaMalloc((void **)&device_index, num_bytes);
+    cudaMemcpy(device_index, host_index, num_bytes, cudaMemcpyHostToDevice);
+}
+
 void test2D(int64 signalLength2D, int64 compressionLevels, int PRINT_INTERMEDIATE) {
     std::cerr << "Testing 2D Decompose" << std::endl;
 
@@ -247,12 +275,14 @@ void test2D(int64 signalLength2D, int64 compressionLevels, int PRINT_INTERMEDIAT
     imageMeta.xEnd = SIGNAL_LENGTH_2D;
     imageMeta.yEnd = SIGNAL_LENGTH_2D;
 
+
     auto startDecompose = std::chrono::system_clock::now();
+    generateIndexArray();
 
     struct ImageMeta compressionResultMeta = dwt2D(COMPRESSION_LEVELS_2D, device_signal_array_2D,
             imageMeta, device_low_filter_array_2D,
             device_high_filter_array_2D, 9, imageMeta,
-            device_output_array_2D, deviceTmpMemory);
+            device_output_array_2D, deviceTmpMemory, device_index, host_index);
 
     cudaDeviceSynchronize();
     auto endDecompose = std::chrono::system_clock::now();
