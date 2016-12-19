@@ -37,6 +37,15 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
 
     int64 filterSideWidth = filterLength / 2;
 
+#if defined SHARED_MEMORY
+    __shared__ double sLowfilter[9]; //max per
+    __shared__ double sHighfilter[9]; //max per
+    if(int64(threadIdx.x) < int64(9)) {
+        sLowfilter[threadIdx.x] = lowFilter[threadIdx.x];
+        sHighfilter[threadIdx.x] = highFilter[threadIdx.x];
+    }
+    __syncthreads();
+#endif
     double vals[9];
 
     int fillLeft = filterSideWidth - xIndex;
@@ -63,14 +72,22 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
     double * filter;
     double sum = 0.0;
     if(xIndex % 2 == 0) {
+#if defined SHARED_MEMORY
+        filter = sLowfilter;
+#else
         filter = lowFilter;
+#endif
         offset = 0;
         //-4
         sum += vals[0] * filter[0];
         //4
         sum += vals[8] * filter[8];
     } else {
+#if defined SHARED_MEMORY
+        filter = sHighfilter; 
+#else 
         filter = highFilter;
+#endif
     }
 
     //-3
@@ -120,6 +137,16 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
 
     int64 filterSideWidth = filterLength / 2;
 
+#if defined SHARED_MEMORY
+    __shared__ double sLowfilter[9]; //max per
+    __shared__ double sHighfilter[9]; //max per
+    if(int64(threadIdx.x) < int64(9)) {
+        sLowfilter[threadIdx.x] = lowFilter[threadIdx.x];
+        sHighfilter[threadIdx.x] = highFilter[threadIdx.x];
+    }
+    __syncthreads();
+#endif
+
     double vals[9];
 
     int fillLeft = filterSideWidth - yIndex;
@@ -146,14 +173,22 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
     double sum = 0.0;
 
     if(yIndex % 2 == 0) {
+#if defined SHARED_MEMORY
+        filter = sLowfilter;
+#else
         filter = lowFilter;
+#endif
         offset = 0;
         //-4
         sum += vals[0] * filter[0];
         ////4
         sum += vals[8] * filter[8];
     } else {
+#if defined SHARED_MEMORY
+        filter = sHighfilter;
+#else
         filter = highFilter;
+#endif
     } 
 
     //-3
