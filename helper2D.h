@@ -44,6 +44,14 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
         sLowfilter[threadIdx.x] = lowFilter[threadIdx.x];
         sHighfilter[threadIdx.x] = highFilter[threadIdx.x];
     }
+    __shared__ double s[1024 + 8]; //max per
+    s[threadIdx.x] = inputSignal[yIndex * imageWidth + xIndex - filterSideWidth]; 
+    if(threadIdx.x == 1023) {
+        int64 startT = 1024;
+        for(int i = 0; i < 8; i++) {    
+            s[startT + i] = inputSignal[yIndex * imageWidth + xIndex - filterSideWidth + (i+1)];
+        }
+    }
     __syncthreads();
 #endif
     double vals[9];
@@ -66,7 +74,11 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
     }
 
     for (int i = filledL; i < 9 - filledR; i++) {
+#if defined SHARED_MEMORY
+        vals[i] = s[threadIdx.x + i];
+#else
         vals[i] = inputSignal[yIndex * imageWidth + xIndex - filterSideWidth + i ];
+#endif
     }
 
     double * filter;
@@ -107,8 +119,6 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
 
     output[yIndex * imageWidth + xIndex / 2 + offset] = sum;
 }
-
-/*---------------------------------VERT---------------------------------------*/
 __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
                                     double * lowFilter, double * highFilter, 
                                     int filterLength,
