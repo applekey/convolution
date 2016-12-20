@@ -1,5 +1,5 @@
 #include "helper.h"
-#define MAX_SIDE 1024
+#define MAX_SIDE 256
 #define OFFSETVAL 2
 #define HIGH_LEFT 1
 #define HIGH_RIGHT 0
@@ -154,10 +154,15 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
         sLowfilter[threadIdx.x] = lowFilter[threadIdx.x];
         sHighfilter[threadIdx.x] = highFilter[threadIdx.x];
     }
-    __shared__ int sIndexOffset[9];  
-    if(threadIdx.x < 9) {
+
+    int totalYItervals = 1024 / MAX_SIDE;
+
+    __shared__ int sIndexOffset[9 + 1024 / MAX_SIDE];
+
+    if(threadIdx.x < 9 + 1024 / MAX_SIDE) {
         sIndexOffset[threadIdx.x] = mirrorIndex[yIndex + threadIdx.x];
     }
+
     __syncthreads();
 #endif
 
@@ -165,7 +170,8 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
 
     for (int i = 0; i < 9; i++) {
 #if defined SHARED_MEMORY
-        int64 indexOffset = sIndexOffset[i];
+        int setOffset = yIndex % totalYItervals;
+        int64 indexOffset = sIndexOffset[i + setOffset];
 #else 
         int64 indexOffset = mirrorIndex[yIndex + i];
 #endif
