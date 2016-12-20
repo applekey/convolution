@@ -163,7 +163,6 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
 
     double vals[9];
 
-    int * moffset = mirrorIndex + yIndex; 
     for (int i = 0; i < 9; i++) {
 #if defined SHARED_MEMORY
         int64 indexOffset = sIndexOffset[i];

@@ -230,7 +230,6 @@ void generateIndexArray() {
     host_index = (int *)malloc(num_bytes);
     std::memset(host_index, 0, num_bytes);
 
-    int rightMirror = 0;
     for(int64 i = 0; i < indexLen; i++) {
         if(i < 4) {
             host_index[i] = ((4 - i) * 2);
@@ -239,10 +238,6 @@ void generateIndexArray() {
             host_index[i] = -((i - (indexLen -4) + 1) * 2);
         } 
     }
-
-    //for(int64 i = 0; i < indexLen; i++) {
-        //std::cerr<<host_index[i]<<" ";
-    //}
 
     cudaMalloc((void **)&device_index, num_bytes);
     cudaMemcpy(device_index, host_index, num_bytes, cudaMemcpyHostToDevice);
