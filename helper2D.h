@@ -67,14 +67,15 @@ __global__ void convolve2D_Horizontal(double * inputSignal, int signalLength,
     double vals[9];
 
     for (int i = 0; i < 9 ; i++) {
-        int64 indexOffset = mirrorIndex[xIndex  + i]; 
 #if defined SHARED_MEMORY
         if(stride >= 1024) {
             vals[i] = s[threadIdx.x + i];
         } else {
+            int64 indexOffset = mirrorIndex[xIndex  + i]; 
             vals[i] = inputSignal[yIndex * imageWidth + xIndex - filterSideWidth + i + indexOffset];
         }
 #else
+        int64 indexOffset = mirrorIndex[xIndex  + i]; 
         vals[i] = inputSignal[yIndex * imageWidth + xIndex - filterSideWidth + i + indexOffset];
 #endif
     }
@@ -121,7 +122,8 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
                                     double * lowFilter, double * highFilter, 
                                     int filterLength,
                                     double * output, struct ImageMeta inputImageMeta, 
-                                    int64 offset, int64 maxThreadWidth) {
+                                    int64 offset, int64 maxThreadWidth,
+                                    int * mirrorIndex) {
     int64 origIndex = calculateIndex();
     int64 index = origIndex;
 
@@ -152,29 +154,23 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
         sLowfilter[threadIdx.x] = lowFilter[threadIdx.x];
         sHighfilter[threadIdx.x] = highFilter[threadIdx.x];
     }
+    __shared__ int sIndexOffset[9];  
+    if(threadIdx.x < 9) {
+        sIndexOffset[threadIdx.x] = mirrorIndex[yIndex + threadIdx.x];
+    }
     __syncthreads();
 #endif
 
     double vals[9];
 
-    int fillLeft = filterSideWidth - yIndex;
-    int filledL = 0;
-    for (int i = 0; i < fillLeft; i++) {
-        int64 mirrorDistance = fillLeft - i;
-        vals[i] = inputSignal[imageWidth * mirrorDistance + xIndex];
-        filledL += 1;
-    }
-
-    int fillRight = yIndex - (height - filterSideWidth) + 1;
-    int filledR = 0;
-    for (int i = 0; i < fillRight; i++) {
-        int64 mirrorDistance = fillRight - i;
-        vals[8 - i] = inputSignal[(height - 1 - mirrorDistance) * imageWidth + xIndex ];
-        filledR += 1;
-    }
-
-    for (int i = filledL; i < 9 - filledR; i++) {
-        vals[i] = inputSignal[(yIndex - filterSideWidth + i) * imageWidth + xIndex ];
+    int * moffset = mirrorIndex + yIndex; 
+    for (int i = 0; i < 9; i++) {
+#if defined SHARED_MEMORY
+        int64 indexOffset = sIndexOffset[i];
+#else 
+        int64 indexOffset = mirrorIndex[yIndex + i];
+#endif
+        vals[i] = inputSignal[(yIndex - filterSideWidth + i + indexOffset) * imageWidth + xIndex ];
     }
 
     double * filter;
@@ -273,7 +269,8 @@ struct ImageMeta dwt2D(int levelsToCompress,
 
             convolve2D_Vertical <<< blocks, threads>>> (currentInputSignal, convolveImagSize,
                     deviceLowFilter, deviceHighFilter, filterLength,
-                    deviceOutputCoefficients, currentImageMeta, blockHeight / 2, maxThreadWidth);
+                    deviceOutputCoefficients, currentImageMeta, blockHeight / 2, maxThreadWidth,
+                    mirrorIndex);
 
         }
 
