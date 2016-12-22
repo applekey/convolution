@@ -221,7 +221,7 @@ void verifyReconstructedSignal2D() {
     return;
 }
 
-int * host_index; 
+int * host_index;
 int * device_index;
 void generateIndexArray() {
     int64 indexLen = SIGNAL_LENGTH_2D + (9 / 2) * 2;
@@ -236,7 +236,7 @@ void generateIndexArray() {
         }
         else if(i >= indexLen - 4) {
             host_index[i] = -((i - (indexLen -4) + 1) * 2);
-        } 
+        }
     }
 
     cudaMalloc((void **)&device_index, num_bytes);
