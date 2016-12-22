@@ -157,10 +157,24 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
 
     int totalYItervals = 1024 / MAX_SIDE;
 
-    __shared__ int sIndexOffset[9 + 1024 / MAX_SIDE];
+    __shared__ int sIndexOffset[9 + (1024 / MAX_SIDE - 1)];
 
     if(threadIdx.x < 9 + 1024 / MAX_SIDE) {
         sIndexOffset[threadIdx.x] = mirrorIndex[yIndex + threadIdx.x];
+    }
+
+    __syncthreads();
+    __shared__ double s[MAX_SIDE * (9 + (1024 / MAX_SIDE - 1))]; //max per
+    int iOffset = threadIdx.x / MAX_SIDE;
+    int numPerT =  (9 + (1024 / MAX_SIDE - 1) / (1024 / MAX_SIDE));
+
+    for(int i = iOffset * numPerT; i < (iOffset + 1) * numPerT; i++) {
+        if( i >= (9 + (1024 / MAX_SIDE - 1))) {
+            break;
+        }
+        int64 indexOffset = sIndexOffset[i];
+        s[threadIdx.x % MAX_SIDE + i * MAX_SIDE] = inputSignal[((yIndex - iOffset) - filterSideWidth + i + indexOffset) * imageWidth 
+                                                     + xIndex ];
     }
 
     __syncthreads();
@@ -170,12 +184,11 @@ __global__ void convolve2D_Vertical(double * inputSignal, int signalLength,
 
     for (int i = 0; i < 9; i++) {
 #if defined SHARED_MEMORY
-        int setOffset = yIndex % totalYItervals;
-        int64 indexOffset = sIndexOffset[i + setOffset];
+        vals[i] = s[threadIdx.x + i * MAX_SIDE];
 #else 
         int64 indexOffset = mirrorIndex[yIndex + i];
-#endif
         vals[i] = inputSignal[(yIndex - filterSideWidth + i + indexOffset) * imageWidth + xIndex ];
+#endif
     }
 
     double * filter;
