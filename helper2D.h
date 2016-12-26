@@ -353,6 +353,16 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
         yHighStart = filterLength - 1;
     }
 
+#if defined SHARED_MEMORY
+    __shared__ double sLowfilter[9]; //max per
+    __shared__ double sHighfilter[9]; //max per
+    if(int64(threadIdx.x) < int64(9)) {
+        sLowfilter[threadIdx.x] = lowFilter[threadIdx.x];
+        sHighfilter[threadIdx.x] = highFilter[threadIdx.x];
+    }
+    __syncthreads();
+#endif
+
     // do extension here
     double sum = 0;
 
@@ -389,7 +399,11 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
     int64 offsetVals = OFFSETVAL;
     int64 iC = 0;
     while(yLowStart > -1) {
+#if defined SHARED_MEMORY
+        sum += sLowfilter[yLowStart] * valsLow[iC + offsetVals];
+#else
         sum += lowFilter[yLowStart] * valsLow[iC + offsetVals];
+#endif
         yLowStart -= 2;
         iC++;
     }
@@ -423,7 +437,11 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
 
     iC = 0;
     while(yHighStart > -1) {
+#if defined SHARED_MEMORY
+        sum += sHighfilter[yHighStart] * valsHigh[iC + offsetVals];
+#else
         sum += highFilter[yHighStart] * valsHigh[iC + offsetVals];
+#endif
         yHighStart -= 2;
         iC ++;
     }
@@ -467,6 +485,17 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
     //populate vals
     int64 highCoefficientOffsetX = blockWidth / 2;
 
+#if defined SHARED_MEMORY
+    __shared__ double sLowfilter[9]; //max per
+    __shared__ double sHighfilter[9]; //max per
+    if(int64(threadIdx.x) < int64(9)) {
+        sLowfilter[threadIdx.x] = lowFilter[threadIdx.x];
+        sHighfilter[threadIdx.x] = highFilter[threadIdx.x];
+    }
+
+    __syncthreads();
+#endif
+
     //low
     double valsLow[9];
     int64 lowCoefficientIndex = (xIndexLocal + 1) / 2;
@@ -491,10 +520,15 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
     for (int i = filledL; i < 9 - filledR; i++) {
         valsLow[i] = inputSignal[yIndexLocal * stride + (lowCoefficientIndex - filterSideWidth + i) ];
     }
+
     int64 offsetVals = OFFSETVAL;
     int64 iC = 0;
     while(yLowStart > -1) {
+#if defined SHARED_MEMORY
+        sum += sLowfilter[yLowStart] * valsLow[iC + offsetVals];
+#else
         sum += lowFilter[yLowStart] * valsLow[iC + offsetVals];
+#endif
         yLowStart -= 2;
         iC++;
     }
@@ -525,7 +559,11 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
 
     iC = 0;
     while(yHighStart > -1) {
+#if defined SHARED_MEMORY
+        sum += sHighfilter[yHighStart] * valsHigh[iC + offsetVals];
+#else
         sum += highFilter[yHighStart] * valsHigh[iC+ offsetVals];
+#endif
         iC++;
         yHighStart -= 2;
     }
