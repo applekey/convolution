@@ -221,23 +221,23 @@ void verifyReconstructedSignal2D() {
     return;
 }
 
-int * host_index;
-int * device_index;
+char * host_index;
+char * device_index;
 void generateIndexArray() {
     int64 indexLen = SIGNAL_LENGTH_2D + (9 / 2) * 2;
     int64 num_bytes = indexLen * sizeof(int);
 
-    host_index = (int *)malloc(num_bytes);
+    host_index = (char *)malloc(num_bytes);
     std::memset(host_index, 0, num_bytes);
 
-    for(int64 i = 0; i < indexLen; i++) {
-        if(i < 4) {
-            host_index[i] = ((4 - i) * 2);
-        }
-        else if(i >= indexLen - 4) {
-            host_index[i] = -((i - (indexLen -4) + 1) * 2);
-        }
-    }
+    host_index[0] = ((4 - 0) * 2);
+    host_index[1] = ((4 - 1) * 2);
+    host_index[2] = ((4 - 2) * 2);
+    host_index[3] = ((4 - 3) * 2);
+    host_index[indexLen - 1] = -((indexLen - 1 - (indexLen -4) + 1) * 2);
+    host_index[indexLen - 2] = -((indexLen - 2 - (indexLen -4) + 1) * 2);
+    host_index[indexLen - 3] = -((indexLen - 3 - (indexLen -4) + 1) * 2);
+    host_index[indexLen - 4] = -((indexLen - 4 - (indexLen -4) + 1) * 2);
 
     cudaMalloc((void **)&device_index, num_bytes);
     cudaMemcpy(device_index, host_index, num_bytes, cudaMemcpyHostToDevice);
@@ -250,7 +250,6 @@ void generateIndexArrayInverse(int compressionLevels, int signalLength) {
     int64 num_bytes = indexLen * sizeof(char);
 
     host_index_inverse_low = (char *)malloc(num_bytes);
-    std::memset(host_index_inverse_low, 0, num_bytes);
 
     int cur = 0;
     int totalOffset = 0;
@@ -284,7 +283,6 @@ void generateIndexArrayInverseHigh(int compressionLevels, int signalLength) {
     int64 num_bytes = indexLen * sizeof(char);
 
     host_index_inverse_high = (char *)malloc(num_bytes);
-    std::memset(host_index_inverse_high, 0, num_bytes);
 
     int cur = 0;
     int totalOffset = 0;
@@ -344,7 +342,7 @@ void test2D(int64 signalLength2D, int64 compressionLevels, int PRINT_INTERMEDIAT
     struct ImageMeta compressionResultMeta = dwt2D(COMPRESSION_LEVELS_2D, device_signal_array_2D,
             imageMeta, device_low_filter_array_2D,
             device_high_filter_array_2D, 9, imageMeta,
-            device_output_array_2D, deviceTmpMemory, &device_index, &host_index);
+            device_output_array_2D, deviceTmpMemory, device_index, host_index);
 
     cudaDeviceSynchronize();
     auto endDecompose = std::chrono::system_clock::now();
@@ -358,9 +356,11 @@ void test2D(int64 signalLength2D, int64 compressionLevels, int PRINT_INTERMEDIAT
         printResult_2D(host_output_array_2D);
     }
 
+    auto startRecompose = std::chrono::system_clock::now();
+
     generateIndexArrayInverse(COMPRESSION_LEVELS_2D, SIGNAL_LENGTH_2D / 2);
     generateIndexArrayInverseHigh(COMPRESSION_LEVELS_2D, SIGNAL_LENGTH_2D / 2);
-    auto startRecompose = std::chrono::system_clock::now();
+
     iDwt2D(COMPRESSION_LEVELS_2D,
            device_output_array_2D,
            compressionResultMeta,
@@ -370,8 +370,7 @@ void test2D(int64 signalLength2D, int64 compressionLevels, int PRINT_INTERMEDIAT
            device_output_array_2D,
            deviceTmpMemory,
            device_index_inverse_low,
-           device_index_inverse_high,
-           SIGNAL_LENGTH_2D / 2 );
+           device_index_inverse_high);
 
     cudaDeviceSynchronize();
     auto endRecompose = std::chrono::system_clock::now();
