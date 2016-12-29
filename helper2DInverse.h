@@ -25,7 +25,7 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
         double * lowFilter, double * highFilter,
         struct ImageMeta inputImageMeta,
         double * reconstructedSignal,
-        char * mirrorIndexLow, char * mirrorIndexHigh, int mirrorLength) {
+        char * mirrorIndexLow, char * mirrorIndexHigh) {
     int64 index = calculateIndex();
 
     if (index >= totalSignalLength) {
@@ -68,35 +68,36 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
 #endif
 
     //low
-    double valsLow[9];
     int64 lowCoefficientIndex = (xIndexLocal + 1) / 2;
 
-    for (int i = 0; i < 9; i++) {
-        if(lowCoefficientIndex + i < 4 || lowCoefficientIndex + i >= blockWidth / 2 + 4) {
-            int64 indexOffset = mirrorIndexLow[lowCoefficientIndex + i];
-            valsLow[i] = inputSignal[yIndexLocal * stride + (lowCoefficientIndex - filterSideWidth + i) + indexOffset];
-        } else {
-            valsLow[i] = inputSignal[yIndexLocal * stride + (lowCoefficientIndex - filterSideWidth + i)];
-        }
-    }
-
     int64 offsetVals = OFFSETVAL;
-    int64 iC = 0;
+    int64 i = offsetVals;
     while(yLowStart > -1) {
 #if defined SHARED_MEMORY
         sum += sLowfilter[yLowStart] * valsLow[iC + offsetVals];
 #else
-        sum += lowFilter[yLowStart] * valsLow[iC + offsetVals];
+        double valLow = 0;
+        if(lowCoefficientIndex + i < 4 || lowCoefficientIndex + i >= blockWidth / 2 + 4) {
+            int64 indexOffset = mirrorIndexLow[lowCoefficientIndex + i];
+            valLow = inputSignal[yIndexLocal * stride + (lowCoefficientIndex - filterSideWidth + i) + indexOffset];
+        } else {
+            valLow = inputSignal[yIndexLocal * stride + (lowCoefficientIndex - filterSideWidth + i)];
+        }
+        sum += lowFilter[yLowStart] * valLow;
 #endif
         yLowStart -= 2;
-        iC++;
+        i++;
     }
 
     //high
-    double valsHigh[9];
     int64 highCoefficientIndex = xIndexLocal / 2;
 
-    for (int i = 0; i < 9; i++) {
+    i = offsetVals;
+    while(yHighStart > -1) {
+#if defined SHARED_MEMORY
+        sum += sHighfilter[yHighStart] * valsHigh[iC + offsetVals];
+#else
+        double valHigh = 0;
         int64 xComponent = 0;
         if(highCoefficientIndex + i < 4 || highCoefficientIndex + i >= blockWidth / 2 + 4) {
             int64 indexOffset = mirrorIndexHigh[highCoefficientIndex + i];
@@ -104,17 +105,10 @@ __global__ void inverseConvolveHorizontal(double * inputSignal, int64 filterLeng
         } else {
             xComponent = (highCoefficientIndex - filterSideWidth + highCoefficientOffsetX + i);
         }
-        valsHigh[i] = inputSignal[yIndexLocal * stride + xComponent];
-    }
-
-    iC = 0;
-    while(yHighStart > -1) {
-#if defined SHARED_MEMORY
-        sum += sHighfilter[yHighStart] * valsHigh[iC + offsetVals];
-#else
-        sum += highFilter[yHighStart] * valsHigh[iC+ offsetVals];
+        valHigh = inputSignal[yIndexLocal * stride + xComponent];
+        sum += highFilter[yHighStart] * valHigh;
 #endif
-        iC++;
+        i++;
         yHighStart -= 2;
     }
 
@@ -177,80 +171,49 @@ __global__ void inverseConvolveVertical(double * inputSignal, int64 filterLength
     int64 highCoefficientOffsetY = blockWidth / 2;
 
     //low
-    double valsLow[9];
     int64 lowCoefficientIndex = (yIndexLocal + 1) / 2;
 
-    int fillLeft = filterSideWidth - lowCoefficientIndex;
-    int filledL = 0;
-
-    for (int i = 0; i < fillLeft; i++) {
-        int64 mirrorDistance = fillLeft - i - LOW_LEFT;
-        valsLow[i] = inputSignal[mirrorDistance * stride +  xIndexLocal];
-        filledL += 1;
-    }
-
-    int fillRight = lowCoefficientIndex - (highCoefficientOffsetY - filterSideWidth - 1);
-    int filledR = 0;
-    for (int i = 0; i < fillRight; i++) {
-        int64 mirrorDistance = fillRight - i - LOW_RIGHT;
-        valsLow[8 - i] = inputSignal[(highCoefficientOffsetY - 1 - mirrorDistance) * stride
-                                     + xIndexLocal ];
-        filledR += 1;
-    }
-
-    for (int i = filledL; i < 9 - filledR; i++) {
-        valsLow[i] = inputSignal[(lowCoefficientIndex - filterSideWidth + i) * stride
-                                 + xIndexLocal ];
-    }
-
     int64 offsetVals = OFFSETVAL;
-    int64 iC = 0;
+    int64 i = offsetVals;
     while(yLowStart > -1) {
 #if defined SHARED_MEMORY
         sum += sLowfilter[yLowStart] * valsLow[iC + offsetVals];
 #else
-        sum += lowFilter[yLowStart] * valsLow[iC + offsetVals];
+        double valLow = 0;
+        if(lowCoefficientIndex + i < 4 || lowCoefficientIndex + i >= blockHeight / 2 + 4) {
+            int64 indexOffset = mirrorIndexLow[lowCoefficientIndex + i];
+            valLow = inputSignal[(lowCoefficientIndex - filterSideWidth + i + indexOffset) * stride
+                                     + xIndexLocal ];
+        } else {
+            valLow = inputSignal[(lowCoefficientIndex - filterSideWidth + i) * stride + xIndexLocal];
+        }
+        sum += lowFilter[yLowStart] * valLow;
 #endif
         yLowStart -= 2;
-        iC++;
+        i++;
     }
 
     //high
-    double valsHigh[9];
     int64 highCoefficientIndex = yIndexLocal / 2;
-    fillLeft = filterSideWidth - highCoefficientIndex;
-    filledL = 0;
-
-    for (int i = 0; i < fillLeft; i++) {
-        int64 mirrorDistance = fillLeft - i - HIGH_LEFT;
-        valsHigh[i] = inputSignal[(highCoefficientOffsetY + mirrorDistance) * stride
-                                  +  xIndexLocal ];
-        filledL += 1;
-    }
-
-    fillRight = highCoefficientIndex - (highCoefficientOffsetY - filterSideWidth - 1);
-    filledR = 0;
-    for (int i = 0; i < fillRight; i++) {
-        int64 mirrorDistance = fillRight - i - HIGH_RIGHT;
-        valsHigh[8 - i] = inputSignal[(2 * highCoefficientOffsetY - 1 - mirrorDistance) * stride
-                                      + xIndexLocal ];
-        filledR += 1;
-    }
-
-    for (int i = filledL; i < 9 - filledR; i++) {
-        valsHigh[i] = inputSignal[(highCoefficientIndex + highCoefficientOffsetY - filterSideWidth + i) * stride
-                                  + xIndexLocal ];
-    }
-
-    iC = 0;
+    
+    i = OFFSETVAL;
+    double valHigh = 0;
     while(yHighStart > -1) {
 #if defined SHARED_MEMORY
         sum += sHighfilter[yHighStart] * valsHigh[iC + offsetVals];
 #else
-        sum += highFilter[yHighStart] * valsHigh[iC + offsetVals];
+        if(highCoefficientIndex + i < 4 || highCoefficientIndex + i >= blockHeight / 2 + 4) {
+            int64 indexOffset = mirrorIndexHigh[highCoefficientIndex + i];
+            valHigh = inputSignal[(highCoefficientIndex + highCoefficientOffsetY - filterSideWidth + i + indexOffset) * stride
+                                      + xIndexLocal ];
+        } else {
+            valHigh = inputSignal[(highCoefficientIndex + highCoefficientOffsetY - filterSideWidth + i) * stride
+                                      + xIndexLocal ];
+        }
+        sum += highFilter[yHighStart] * valHigh;
 #endif
         yHighStart -= 2;
-        iC ++;
+        i++;
     }
 
     int64 outputIndex = yIndexLocal * stride + xIndexLocal;
@@ -268,8 +231,7 @@ void iDwt2D(int levelsToCompressUncompress,
             double * deviceOutputCoefficients,
             double * deviceTmpMemory,
             char * deviceIndexLow,
-            char * deviceIndexHigh,
-            int mirrorLength) {
+            char * deviceIndexHigh) {
 
     bool isHorizontal = false;
     //calculate current image meta
@@ -289,7 +251,7 @@ void iDwt2D(int levelsToCompressUncompress,
                     totalNumElements,
                     deviceILowFilter, deviceIHighFilter,
                     currentImageMeta,
-                    deviceOutputCoefficients, deviceIndexLow, deviceIndexHigh, mirrorLength);
+                    deviceOutputCoefficients, deviceIndexLow, deviceIndexHigh);
         } else {
             //expand current image size
 

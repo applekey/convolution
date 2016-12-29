@@ -370,8 +370,7 @@ void test2D(int64 signalLength2D, int64 compressionLevels, int PRINT_INTERMEDIAT
            device_output_array_2D,
            deviceTmpMemory,
            device_index_inverse_low,
-           device_index_inverse_high,
-           SIGNAL_LENGTH_2D / 2 );
+           device_index_inverse_high);
 
     cudaDeviceSynchronize();
     auto endRecompose = std::chrono::system_clock::now();
