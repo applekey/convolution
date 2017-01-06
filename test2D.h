@@ -38,7 +38,6 @@ double * device_output_array_2D = 0;
 
 struct signalGenerator2D {
     double valueGivenIndex(int64 index, int64 maxIndex) {
-        /*return 1.0;*/
         return 0.1 * double(index);
     }
 
@@ -250,6 +249,7 @@ void generateIndexArrayInverse(int compressionLevels, int signalLength) {
     int64 num_bytes = indexLen * sizeof(char);
 
     host_index_inverse_low = (char *)malloc(num_bytes);
+    std::memset(host_index_inverse_low, 0, num_bytes);
 
     int cur = 0;
     int totalOffset = 0;
@@ -281,9 +281,9 @@ char * device_index_inverse_high;
 void generateIndexArrayInverseHigh(int compressionLevels, int signalLength) {
     int64 indexLen = signalLength + (9 / 2) * 2;
     int64 num_bytes = indexLen * sizeof(char);
-
     host_index_inverse_high = (char *)malloc(num_bytes);
 
+    std::memset(host_index_inverse_high, 0, num_bytes);
     int cur = 0;
     int totalOffset = 0;
     for(int i = 0;i < compressionLevels;i++) {
@@ -352,9 +352,9 @@ void test2D(int64 signalLength2D, int64 compressionLevels, int PRINT_INTERMEDIAT
     std::cout << diff.count() << " 2D Compression Total s\n";
     std::cerr<<std::endl;
 
-    if(PRINT_INTERMEDIATE) {
-        printResult_2D(host_output_array_2D);
-    }
+//    if(PRINT_INTERMEDIATE) {
+//        printResult_2D(host_output_array_2D);
+//    }
 
     auto startRecompose = std::chrono::system_clock::now();
 
